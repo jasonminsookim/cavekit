@@ -1,0 +1,106 @@
+#!/bin/bash
+
+# sdd — Global CLI for Spec-Driven Development
+#
+# Usage:
+#   sdd --monitor [OPTIONS]    Start tmux dashboard + claude + /sdd-execute
+#   sdd --kill                 Kill the tmux session
+#   sdd --help                 Show this help
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}" 2>/dev/null || readlink "${BASH_SOURCE[0]}")")" && pwd)"
+SESSION_NAME="sdd-loop"
+RIGHT_WIDTH_PCT=30
+
+usage() {
+  cat <<'EOF'
+sdd — Spec-Driven Development CLI
+
+Usage:
+  sdd --monitor [OPTIONS]    Start tmux dashboard + claude + /sdd-execute
+  sdd --kill                 Kill the tmux session
+
+Monitor options (forwarded to /sdd-execute):
+  --filter <pattern>         Scope to specs/frontier matching pattern
+  --adversarial              Add Codex adversarial review
+  --max-iterations <n>       Max iterations (default: 20)
+
+Examples:
+  sdd --monitor
+  sdd --monitor --adversarial
+  sdd --monitor --filter v2 --max-iterations 30
+  sdd --kill
+EOF
+}
+
+case "${1:-}" in
+  --help|-h|"")
+    usage
+    exit 0
+    ;;
+  --kill|kill)
+    tmux kill-session -t "$SESSION_NAME" 2>/dev/null && echo "Session '$SESSION_NAME' killed." || echo "No active session."
+    exit 0
+    ;;
+  --monitor)
+    shift
+    ;;
+  *)
+    echo "Unknown option: $1" >&2
+    usage >&2
+    exit 1
+    ;;
+esac
+
+# ─── Preflight ──────────────────────────────────────────────────────────────
+
+command -v tmux &>/dev/null || { echo "tmux not found. Install: brew install tmux" >&2; exit 1; }
+command -v claude &>/dev/null || { echo "claude not found. Install Claude Code first." >&2; exit 1; }
+
+if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
+  echo "Existing '$SESSION_NAME' session found. Killing it..."
+  tmux kill-session -t "$SESSION_NAME"
+fi
+
+SDD_ARGS="$*"
+WORK_DIR="$(pwd)"
+
+# ─── Terminal size ──────────────────────────────────────────────────────────
+
+if STTY_SIZE=$(stty size 2>/dev/null); then
+  ROWS=$(echo "$STTY_SIZE" | awk '{print $1}')
+  COLS=$(echo "$STTY_SIZE" | awk '{print $2}')
+else
+  COLS=${COLUMNS:-200}
+  ROWS=${LINES:-50}
+fi
+
+RIGHT_WIDTH=$(( COLS * RIGHT_WIDTH_PCT / 100 ))
+[[ "$RIGHT_WIDTH" -lt 35 ]] && RIGHT_WIDTH=35
+
+echo "Starting SDD monitor (${COLS}x${ROWS})..."
+
+# ─── Create tmux session ───────────────────────────────────────────────────
+
+tmux new-session -d -s "$SESSION_NAME" -c "$WORK_DIR" -x "$COLS" -y "$ROWS" \
+  "claude; exec bash"
+
+# Send /sdd-execute after claude starts
+(
+  sleep 2
+  tmux send-keys -t "$SESSION_NAME:0.0" "/sdd-execute $SDD_ARGS" Enter
+) &
+
+# Right panes
+tmux split-window -h -t "$SESSION_NAME" -l "$RIGHT_WIDTH" -c "$WORK_DIR" \
+  "exec bash \"$SCRIPT_DIR/dashboard-progress.sh\""
+tmux select-pane -T "sdd-progress"
+
+tmux split-window -v -t "$SESSION_NAME" -c "$WORK_DIR" \
+  "exec bash \"$SCRIPT_DIR/dashboard-activity.sh\""
+tmux select-pane -T "sdd-activity"
+
+tmux select-pane -t "$SESSION_NAME:0.0"
+
+exec tmux attach-session -t "$SESSION_NAME"
