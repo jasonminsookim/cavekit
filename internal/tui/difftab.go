@@ -63,6 +63,16 @@ func (d *DiffTab) Content() string {
 		}
 	}
 
+	// Apply scroll position
+	if d.scrollPos > 0 && d.scrollPos < len(styled) {
+		styled = styled[d.scrollPos:]
+	} else if d.scrollPos >= len(styled) {
+		d.scrollPos = max(0, len(styled)-1)
+		if len(styled) > 0 {
+			styled = styled[len(styled)-1:]
+		}
+	}
+
 	return header + strings.Join(styled, "\n")
 }
 

@@ -1,14 +1,17 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	osexec "os/exec"
+	"path/filepath"
 
 	"github.com/julb/blueprint-monitor/internal/exec"
+	"github.com/julb/blueprint-monitor/internal/frontier"
 	"github.com/julb/blueprint-monitor/internal/session"
-	"github.com/julb/blueprint-monitor/internal/tui"
 	"github.com/julb/blueprint-monitor/internal/tmux"
+	"github.com/julb/blueprint-monitor/internal/tui"
 	"github.com/julb/blueprint-monitor/internal/worktree"
 )
 
@@ -41,19 +44,36 @@ func main() {
 }
 
 func runMonitor() {
+	// Parse flags
+	program := "claude"
+	autoYes := false
+	for i, arg := range os.Args {
+		if (arg == "--program" || arg == "-p") && i+1 < len(os.Args) {
+			program = os.Args[i+1]
+		}
+		if arg == "--autoyes" || arg == "-y" {
+			autoYes = true
+		}
+	}
+
 	// Preflight checks
-	if err := preflight(); err != nil {
+	if err := preflight(program); err != nil {
 		fmt.Fprintf(os.Stderr, "preflight failed: %s\n", err)
 		os.Exit(1)
 	}
 
-	// Load persisted state
-	store := session.NewStore("")
-	instances, _ := store.Load()
-	_ = instances // TODO: wire into TUI
+	// Determine project root
+	cwd, _ := os.Getwd()
+	executor := exec.NewRealExecutor()
+	wtMgr := worktree.NewManager(executor)
+	ctx := context.Background()
+	root, err := wtMgr.ProjectRoot(ctx, cwd)
+	if err != nil {
+		root = cwd
+	}
 
 	// Launch TUI
-	if err := tui.Run(); err != nil {
+	if err := tui.Run(root, program, autoYes); err != nil {
 		fmt.Fprintf(os.Stderr, "TUI error: %s\n", err)
 		os.Exit(1)
 	}
@@ -86,8 +106,41 @@ func runStatus() {
 		if wt.HasRalphLoop {
 			icon = "⟳"
 		}
-		fmt.Printf("%s %s: %s\n", icon, wt.FrontierName, wt.Path)
+
+		// Try to compute progress
+		done, total := computeWorktreeProgress(wt.Path)
+		if total > 0 {
+			fmt.Printf("%s %s: %d/%d tasks done\n", icon, wt.FrontierName, done, total)
+		} else {
+			fmt.Printf("%s %s: %s\n", icon, wt.FrontierName, wt.Path)
+		}
 	}
+}
+
+// computeWorktreeProgress reads frontier and impl files to compute task progress.
+func computeWorktreeProgress(wtPath string) (done, total int) {
+	// Look for frontier files in worktree
+	sitesDir := filepath.Join(wtPath, "context", "sites")
+	frontiers, err := frontier.Discover(sitesDir)
+	if err != nil || len(frontiers) == 0 {
+		return 0, 0
+	}
+
+	// Parse first frontier
+	f, err := frontier.Parse(frontiers[0].Path)
+	if err != nil {
+		return 0, 0
+	}
+
+	// Track status from impl files
+	implDir := filepath.Join(wtPath, "context", "impl")
+	statuses, err := frontier.TrackStatus(implDir)
+	if err != nil {
+		return 0, len(f.Tasks)
+	}
+
+	summary := frontier.ComputeProgress(f, statuses)
+	return summary.Done, summary.Total
 }
 
 func runKill() {
@@ -100,17 +153,25 @@ func runKill() {
 
 	// Kill tmux sessions
 	sessions, _ := tmuxMgr.ListSessions(nil)
+	killed := 0
 	for _, s := range sessions {
 		tmuxMgr.Kill(nil, s)
+		killed++
 	}
 
-	// Remove worktrees
+	// Remove worktrees and branches
 	worktrees, _ := worktree.DiscoverAll(root)
+	cleaned := 0
 	for _, wt := range worktrees {
 		wtMgr.Remove(nil, root, wt.FrontierName)
+		cleaned++
 	}
 
-	fmt.Printf("Killed %d sessions, cleaned %d worktrees.\n", len(sessions), len(worktrees))
+	// Clear persisted state
+	store := session.NewStore("")
+	os.Remove(store.Path())
+
+	fmt.Printf("Killed %d sessions, cleaned %d worktrees.\n", killed, cleaned)
 }
 
 func runDebug() {
@@ -125,12 +186,15 @@ func runReset() {
 	fmt.Println("State cleared.")
 }
 
-func preflight() error {
+func preflight(program string) error {
 	if _, err := osexec.LookPath("tmux"); err != nil {
 		return fmt.Errorf("tmux not installed")
 	}
 	if _, err := osexec.LookPath("git"); err != nil {
 		return fmt.Errorf("git not installed")
+	}
+	if _, err := osexec.LookPath(program); err != nil {
+		return fmt.Errorf("%s not installed (use --program to override)", program)
 	}
 	return nil
 }

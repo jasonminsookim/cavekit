@@ -2,11 +2,15 @@
 package tui
 
 import (
+	"context"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/julb/blueprint-monitor/internal/exec"
 	"github.com/julb/blueprint-monitor/internal/session"
+	"github.com/julb/blueprint-monitor/internal/tmux"
+	"github.com/julb/blueprint-monitor/internal/worktree"
 )
 
 // Tab represents the active content tab.
@@ -34,6 +38,12 @@ func (t Tab) String() string {
 // tickMsg triggers periodic updates (metadata, capture).
 type tickMsg time.Time
 
+// instanceCreatedMsg is sent when a new instance has been started in the background.
+type instanceCreatedMsg struct {
+	inst *session.Instance
+	err  error
+}
+
 // App is the main bubbletea model.
 type App struct {
 	width  int
@@ -48,21 +58,53 @@ type App struct {
 	bottomMenu   *BottomMenu
 	overlay      *Overlay
 
+	// Tab data sources
+	previewTab  *PreviewTab
+	diffTab     *DiffTab
+	terminalTab *TerminalTab
+
 	// Data
 	instances []*session.Instance
+
+	// Session management
+	sessionMgr     *session.Manager
+	store          *session.Store
+	autoYes        *session.AutoYes
+	statusDetector *tmux.StatusDetector
+	projectRoot    string
+	program        string
 
 	// Set to true when we need to quit
 	quitting bool
 }
 
 // NewApp creates a new TUI application model.
-func NewApp() App {
+func NewApp(projectRoot, program string, autoYesEnabled bool) App {
+	executor := exec.NewRealExecutor()
+	tmuxMgr := tmux.NewManager(executor)
+	wtMgr := worktree.NewManager(executor)
+	sessMgr := session.NewManager(tmuxMgr, wtMgr)
+	store := session.NewStore("")
+
 	return App{
 		activeTab:    TabPreview,
 		instanceList: NewInstanceList(),
 		tabContent:   NewTabContent(),
 		bottomMenu:   NewBottomMenu(),
 		overlay:      NewOverlay(),
+
+		// Tab data sources
+		previewTab:  NewPreviewTab(tmuxMgr),
+		diffTab:     NewDiffTab(wtMgr),
+		terminalTab: NewTerminalTab(tmuxMgr),
+
+		// Session management
+		sessionMgr:     sessMgr,
+		store:          store,
+		autoYes:        session.NewAutoYes(tmuxMgr, autoYesEnabled),
+		statusDetector: tmux.NewStatusDetector(tmuxMgr),
+		projectRoot:    projectRoot,
+		program:        program,
 	}
 }
 
@@ -89,6 +131,7 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch action {
 		case ActionQuit:
 			a.quitting = true
+			a.saveState()
 			return a, tea.Quit
 		case ActionSwitchTab:
 			a.activeTab = (a.activeTab + 1) % 3
@@ -117,6 +160,68 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if sel := a.instanceList.Selected(); sel != nil {
 				a.overlay.Show(OverlayConfirmation, "Kill Instance", "Kill '"+sel.Title+"'?")
 			}
+		case ActionTextInput:
+			if a.overlay.Active == OverlayTextInput {
+				r := msg.Runes
+				if len(r) > 0 {
+					a.overlay.InputValue += string(r)
+				}
+			}
+		case ActionBackspace:
+			if a.overlay.Active == OverlayTextInput && len(a.overlay.InputValue) > 0 {
+				a.overlay.InputValue = a.overlay.InputValue[:len(a.overlay.InputValue)-1]
+			}
+		case ActionConfirmYes:
+			switch a.overlay.Active {
+			case OverlayTextInput:
+				name := a.overlay.InputValue
+				if name != "" && len(name) <= 32 {
+					a.overlay.Hide()
+					return a, a.createInstanceCmd(name)
+				}
+			case OverlayConfirmation:
+				if sel := a.instanceList.Selected(); sel != nil {
+					a.overlay.Hide()
+					a.sessionMgr.Kill(context.Background(), sel, a.projectRoot, true)
+					a.removeInstance(sel)
+				}
+			}
+		case ActionConfirmNo:
+			a.overlay.Hide()
+		case ActionOpen:
+			// Handled via tmux attach — will be implemented in T-045
+		case ActionPush:
+			if sel := a.instanceList.Selected(); sel != nil && sel.WorktreePath != "" {
+				a.overlay.Show(OverlayConfirmation, "Push Branch", "Push '"+sel.Title+"' branch to remote?")
+			}
+		case ActionScrollUp:
+			a.diffTab.ScrollUp(3)
+			a.tabContent.SetDiff(a.diffTab.Content())
+		case ActionScrollDown:
+			a.diffTab.ScrollDown(3)
+			a.tabContent.SetDiff(a.diffTab.Content())
+		}
+
+	case tea.MouseMsg:
+		if !a.overlay.IsActive() {
+			leftWidth := max(int(float64(a.width)*LeftPanelRatio), MinLeftWidth)
+			if msg.X < leftWidth {
+				row := msg.Y - 1
+				if row >= 0 && row < len(a.instances) {
+					a.selectedIndex = row
+					a.instanceList.SetSelected(a.selectedIndex)
+					a.selectedIndex = a.instanceList.SelectedIndex()
+				}
+			}
+		}
+
+	case instanceCreatedMsg:
+		if msg.err == nil && msg.inst != nil {
+			a.instances = append(a.instances, msg.inst)
+			a.instanceList.SetInstances(a.instances)
+			a.selectedIndex = len(a.instances) - 1
+			a.instanceList.SetSelected(a.selectedIndex)
+			a.saveState()
 		}
 
 	case tea.WindowSizeMsg:
@@ -125,10 +230,62 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.updateLayout()
 
 	case tickMsg:
+		a.onTick()
 		return a, tickCmd()
 	}
 
 	return a, nil
+}
+
+// onTick performs all periodic updates on each 500ms tick.
+func (a *App) onTick() {
+	ctx := context.Background()
+
+	// Update progress for all active instances
+	for _, inst := range a.instances {
+		if inst.IsActive() {
+			session.UpdateProgress(inst)
+
+			// Update instance status from tmux status detection
+			if inst.TmuxSession != "" {
+				paneStatus, err := a.statusDetector.Detect(ctx, inst.TmuxSession)
+				if err == nil {
+					switch paneStatus {
+					case tmux.PaneActive:
+						inst.Status = session.StatusRunning
+					case tmux.PaneIdle, tmux.PanePrompt:
+						inst.Status = session.StatusReady
+					}
+				}
+
+				// Auto-yes: approve permission prompts
+				a.autoYes.Check(ctx, inst.TmuxSession)
+			}
+		}
+	}
+
+	// Update instance list display
+	a.instanceList.SetInstances(a.instances)
+
+	// Update tab content for selected instance
+	sel := a.instanceList.Selected()
+	if sel != nil {
+		switch a.activeTab {
+		case TabPreview:
+			a.previewTab.Capture(ctx, sel.TmuxSession)
+			a.tabContent.SetPreview(a.previewTab.Content())
+		case TabDiff:
+			a.diffTab.Refresh(ctx, sel.WorktreePath)
+			a.tabContent.SetDiff(a.diffTab.Content())
+		case TabTerminal:
+			a.terminalTab.Capture(ctx, sel.Title)
+			a.tabContent.SetTerminal(a.terminalTab.Content())
+		}
+	} else {
+		a.tabContent.SetPreview("")
+		a.tabContent.SetDiff("")
+		a.tabContent.SetTerminal("")
+	}
 }
 
 func (a *App) updateLayout() {
@@ -186,10 +343,67 @@ func (a *App) SetInstances(instances []*session.Instance) {
 	a.instanceList.SetInstances(instances)
 }
 
+func (a *App) createInstanceCmd(name string) tea.Cmd {
+	return func() tea.Msg {
+		prog := a.program
+		if prog == "" {
+			prog = "claude"
+		}
+		inst := a.sessionMgr.Create(name, "", name, prog)
+		err := a.sessionMgr.Start(context.Background(), inst, a.projectRoot, name, 3*time.Second)
+		return instanceCreatedMsg{inst: inst, err: err}
+	}
+}
+
+func (a *App) removeInstance(inst *session.Instance) {
+	for i, ins := range a.instances {
+		if ins == inst {
+			a.instances = append(a.instances[:i], a.instances[i+1:]...)
+			break
+		}
+	}
+	a.instanceList.SetInstances(a.instances)
+	if a.selectedIndex >= len(a.instances) && a.selectedIndex > 0 {
+		a.selectedIndex = len(a.instances) - 1
+	}
+	a.instanceList.SetSelected(a.selectedIndex)
+	a.saveState()
+}
+
+func (a *App) saveState() {
+	if a.store != nil {
+		a.store.Save(a.instances)
+	}
+}
+
 // Run starts the TUI application.
-func Run() error {
+func Run(projectRoot, program string, autoYes bool) error {
+	app := NewApp(projectRoot, program, autoYes)
+
+	// Load persisted instances and validate
+	instances, _ := app.store.Load()
+	if len(instances) > 0 {
+		ctx := context.Background()
+		tmuxMgr := tmux.NewManager(exec.NewRealExecutor())
+		for _, inst := range instances {
+			// Validate tmux session still exists
+			if inst.TmuxSession != "" && !tmuxMgr.Exists(ctx, inst.TmuxSession) {
+				inst.Status = session.StatusDone
+			}
+		}
+		// Filter out Done instances from previous sessions
+		var active []*session.Instance
+		for _, inst := range instances {
+			if inst.Status != session.StatusDone {
+				active = append(active, inst)
+			}
+		}
+		app.instances = active
+		app.instanceList.SetInstances(active)
+	}
+
 	p := tea.NewProgram(
-		NewApp(),
+		app,
 		tea.WithAltScreen(),
 		tea.WithMouseCellMotion(),
 	)

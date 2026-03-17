@@ -1,6 +1,6 @@
 ---
 created: "2026-03-17T00:00:00Z"
-last_edited: "2026-03-17T00:00:00Z"
+last_edited: "2026-03-17T12:00:00Z"
 ---
 
 # Spec: CLI Interface
@@ -66,3 +66,8 @@ The command-line interface that replaces the current `blueprint` bash script. Pr
 ## Cross-References
 - See also: blueprint-tui.md (monitor launches TUI)
 - See also: blueprint-session.md (persistence paths)
+
+## Changes
+- 2026-03-17: R2 acceptance criteria clarified — must parse --autoyes/-y flag and pass to TUI (finding F-010)
+- 2026-03-17: R2 acceptance criteria clarified — preflight must check program (claude) is installed (finding F-015)
+- 2026-03-17: R3 acceptance criteria clarified — must compute and display progress counts, not just worktree paths (finding F-012)

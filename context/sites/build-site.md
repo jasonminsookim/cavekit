@@ -1,6 +1,6 @@
 ---
 created: "2026-03-17T00:00:00Z"
-last_edited: "2026-03-17T00:00:00Z"
+last_edited: "2026-03-17T12:00:00Z"
 ---
 
 # Feature Frontier
@@ -105,3 +105,27 @@ last_edited: "2026-03-17T00:00:00Z"
 | 5 | 3 | 3S |
 
 **Total: 42 tasks, 6 tiers**
+
+---
+
+## Tier 6 — Inspection Fixes (depends on Tier 5)
+
+| Task | Title | Spec | Requirement | blockedBy | Effort | Finding |
+|------|-------|------|------------|-----------|--------|---------|
+| T-043 | Wire tick loop: capture, diff, progress, auto-yes, status | spec-tui.md | R12 | T-037 | L | F-001 |
+| T-044 | Instantiate PreviewTab/DiffTab/TerminalTab in App, pipe to TabContent | spec-tui.md | R12 | T-029, T-030, T-031, T-037 | M | F-002 |
+| T-045 | Handle ActionOpen: tmux attach/detach with TUI suspend | spec-tui.md | R13 | T-009, T-037 | M | F-003 |
+| T-046 | Handle ActionPush: branch push with confirmation overlay | spec-tui.md | R13 | T-028, T-027, T-037 | S | F-006 |
+| T-047 | Handle ActionCheckout/ActionResume | spec-tui.md | R13 | T-037 | S | F-006 |
+| T-048 | Handle ActionScrollUp/Down for preview and diff tabs | spec-tui.md | R13 | T-029, T-030, T-037 | S | F-008 |
+| T-049 | Integrate FrontierPicker into new-instance flow | spec-tui.md | R11 | T-035, T-032 | M | F-007 |
+| T-050 | Validate persistence on load (tmux/worktree existence) | spec-session.md | R3 | T-021 | S | F-009 |
+| T-051 | Parse --autoyes/-y flag, pass to TUI and AutoYes | spec-cli.md | R2 | T-039 | S | F-010 |
+| T-052 | Status command: show progress counts from frontier tracking | spec-cli.md | R3 | T-040, T-014, T-017 | S | F-012 |
+| T-053 | Instance list: add branch name and diff stats to rows | spec-tui.md | R2 | T-024, T-012 | S | F-011 |
+| T-054 | DiffTab: apply scrollPos to Content() output | spec-tui.md | R5 | T-030 | S | F-014 |
+| T-055 | Context-adaptive menu items | spec-tui.md | R7 | T-026 | S | F-013 |
+| T-056 | Preflight check for program binary | spec-cli.md | R2 | T-039 | S | F-015 |
+
+**Inspection additions: 14 tasks, 1 tier**
+**New total: 56 tasks, 7 tiers**
