@@ -74,6 +74,46 @@ func joinMenuParts(parts []string, sep string) string {
 	return result
 }
 
+// OverlayMenu returns menu items appropriate for overlay contexts.
+func OverlayMenu(overlayType OverlayType) []MenuItem {
+	switch overlayType {
+	case OverlayTextInput:
+		return []MenuItem{
+			{"Enter", "confirm"},
+			{"Esc", "cancel"},
+		}
+	case OverlayConfirmation:
+		return []MenuItem{
+			{"y", "yes"},
+			{"n", "no"},
+			{"Esc", "cancel"},
+		}
+	case OverlayFrontierPicker:
+		return []MenuItem{
+			{"j/k", "navigate"},
+			{"Space", "select"},
+			{"Enter", "confirm"},
+			{"Esc", "cancel"},
+		}
+	case OverlayHelp:
+		return []MenuItem{
+			{"Esc", "close"},
+		}
+	default:
+		return DefaultMenu()
+	}
+}
+
+// NoSelectionMenu returns menu items when no instance is selected.
+func NoSelectionMenu() []MenuItem {
+	return []MenuItem{
+		{"n", "new"},
+		{"tab", "switch tab"},
+		{"?", "help"},
+		{"q", "quit"},
+	}
+}
+
 // RenderMenuCompact renders a compact version for narrow terminals.
 func RenderMenuCompact(items []MenuItem) string {
 	var parts []string

@@ -312,10 +312,22 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (a *App) onTick() {
 	ctx := context.Background()
 
-	// Update progress for all active instances
+	wtMgr := worktree.NewManager(exec.NewRealExecutor())
+
+	// Update progress and diff stats for all active instances
 	for _, inst := range a.instances {
 		if inst.IsActive() {
 			session.UpdateProgress(inst)
+
+			// Update diff stats
+			if inst.WorktreePath != "" {
+				stats, err := wtMgr.DiffStat(ctx, inst.WorktreePath)
+				if err == nil {
+					inst.DiffAdded = stats.Insertions
+					inst.DiffRemoved = stats.Deletions
+					inst.BranchName = worktree.BranchName(inst.Title)
+				}
+			}
 
 			// Update instance status from tmux status detection
 			if inst.TmuxSession != "" {
@@ -337,6 +349,15 @@ func (a *App) onTick() {
 
 	// Update instance list display
 	a.instanceList.SetInstances(a.instances)
+
+	// Update menu based on context
+	if a.overlay.IsActive() {
+		a.bottomMenu.SetItems(OverlayMenu(a.overlay.Active))
+	} else if a.instanceList.Selected() == nil {
+		a.bottomMenu.SetItems(NoSelectionMenu())
+	} else {
+		a.bottomMenu.SetItems(DefaultMenu())
+	}
 
 	// Update tab content for selected instance
 	sel := a.instanceList.Selected()

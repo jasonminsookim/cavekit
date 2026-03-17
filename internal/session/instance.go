@@ -65,6 +65,11 @@ type Instance struct {
 	TasksTotal int    `json:"tasks_total"`
 	CurrentTier int   `json:"current_tier"`
 	CurrentTask string `json:"current_task"`
+
+	// Diff stats (updated periodically from worktree).
+	BranchName  string `json:"branch_name"`
+	DiffAdded   int    `json:"diff_added"`
+	DiffRemoved int    `json:"diff_removed"`
 }
 
 // NewInstance creates a new instance with default values.

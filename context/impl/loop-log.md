@@ -30,3 +30,11 @@
 - **Files:** internal/tui/app.go (frontierPicker field, discoverFrontierItems, launchFrontiers, ActionToggleSelect, picker overlay rendering), internal/tui/keyhandler.go (ActionToggleSelect, space key), internal/tui/overlay.go (OverlayFrontierPicker)
 - **Validation:** Build P, Tests P, Acceptance: 'n' shows picker P, navigate j/k P, space multi-select P, enter launches P, esc cancels P, done strikethrough P
 - **Next:** T-050 — Validate persistence on load
+
+### Iteration 5 — 2026-03-17
+- **Task:** T-050 (validate persistence) + T-053 (instance list branch/diff stats) + T-055 (context-adaptive menu)
+- **Tier:** 6
+- **Status:** DONE
+- **Files:** internal/session/instance.go (BranchName, DiffAdded, DiffRemoved fields), internal/tui/instancelist.go (renderRow shows branch+diff), internal/tui/menu.go (OverlayMenu, NoSelectionMenu), internal/tui/app.go (onTick updates diff stats and menu)
+- **Validation:** Build P, Tests P, Acceptance: persistence validates tmux P, instance list shows branch+diff P, menu adapts to overlay/no-selection/default P
+- **Note:** T-050 was already implemented in Run() during iteration 1. Marking done. All 14 Tier 6 tasks now complete.

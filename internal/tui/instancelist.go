@@ -95,8 +95,20 @@ func (l *InstanceList) renderRow(index int, inst *session.Instance, selected boo
 		progress = fmt.Sprintf(" %d/%d", inst.TasksDone, inst.TasksTotal)
 	}
 
+	// Diff stats
+	diffStr := ""
+	if inst.DiffAdded > 0 || inst.DiffRemoved > 0 {
+		diffStr = fmt.Sprintf(" +%d/-%d", inst.DiffAdded, inst.DiffRemoved)
+	}
+
+	// Branch name
+	branchStr := ""
+	if inst.BranchName != "" {
+		branchStr = " " + inst.BranchName
+	}
+
 	// Build row text
-	text := fmt.Sprintf(" %d %s %s%s", index+1, statusIcon, inst.Title, progress)
+	text := fmt.Sprintf(" %d %s %s%s%s%s", index+1, statusIcon, inst.Title, progress, diffStr, branchStr)
 
 	if selected {
 		return SelectedItemStyle.Width(l.width).Render(text)
