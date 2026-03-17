@@ -23,6 +23,12 @@ const (
 	ActionScrollDown
 )
 
+// ActionTextInput signals that a regular character was typed into a text input overlay.
+const ActionTextInput KeyAction = ActionScrollDown + 1
+
+// ActionBackspace signals a backspace in a text input overlay.
+const ActionBackspace KeyAction = ActionTextInput + 1
+
 // MapKey maps a key string to an action, respecting overlay state.
 func MapKey(key string, overlayActive bool, overlayType OverlayType) KeyAction {
 	// When overlay is active, only overlay-specific keys work
@@ -34,16 +40,30 @@ func MapKey(key string, overlayActive bool, overlayType OverlayType) KeyAction {
 			if overlayType == OverlayConfirmation {
 				return ActionConfirmYes
 			}
+			if overlayType == OverlayTextInput {
+				return ActionTextInput
+			}
 		case "n":
 			if overlayType == OverlayConfirmation {
 				return ActionConfirmNo
 			}
+			if overlayType == OverlayTextInput {
+				return ActionTextInput
+			}
 		case "esc", "ctrl+c":
 			return ActionCancel
+		case "backspace":
+			if overlayType == OverlayTextInput {
+				return ActionBackspace
+			}
 		case "j", "down":
 			return ActionNavigateDown
 		case "k", "up":
 			return ActionNavigateUp
+		}
+		// In text input mode, treat single printable characters as text input
+		if overlayType == OverlayTextInput && len(key) == 1 && key[0] >= 32 && key[0] <= 126 {
+			return ActionTextInput
 		}
 		return ActionNone
 	}

@@ -8,7 +8,7 @@ import (
 )
 
 func TestNewApp(t *testing.T) {
-	app := NewApp()
+	app := NewApp("", "")
 	if app.activeTab != TabPreview {
 		t.Errorf("default tab should be Preview, got %v", app.activeTab)
 	}
@@ -18,7 +18,7 @@ func TestNewApp(t *testing.T) {
 }
 
 func TestApp_Update_Quit(t *testing.T) {
-	app := NewApp()
+	app := NewApp("", "")
 	model, cmd := app.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("q")})
 	updated := model.(App)
 	if !updated.quitting {
@@ -30,7 +30,7 @@ func TestApp_Update_Quit(t *testing.T) {
 }
 
 func TestApp_Update_TabSwitch(t *testing.T) {
-	app := NewApp()
+	app := NewApp("", "")
 	if app.activeTab != TabPreview {
 		t.Fatal("should start on Preview")
 	}
@@ -55,7 +55,7 @@ func TestApp_Update_TabSwitch(t *testing.T) {
 }
 
 func TestApp_Update_Navigate(t *testing.T) {
-	app := NewApp()
+	app := NewApp("", "")
 	model, _ := app.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("j")})
 	updated := model.(App)
 	if updated.selectedIndex != 1 {
@@ -77,7 +77,7 @@ func TestApp_Update_Navigate(t *testing.T) {
 }
 
 func TestApp_Update_Resize(t *testing.T) {
-	app := NewApp()
+	app := NewApp("", "")
 	model, _ := app.Update(tea.WindowSizeMsg{Width: 120, Height: 40})
 	updated := model.(App)
 	if updated.width != 120 || updated.height != 40 {
@@ -86,7 +86,7 @@ func TestApp_Update_Resize(t *testing.T) {
 }
 
 func TestApp_View_BeforeResize(t *testing.T) {
-	app := NewApp()
+	app := NewApp("", "")
 	view := app.View()
 	if view != "Initializing..." {
 		t.Errorf("before resize, should show initializing, got %q", view)
@@ -94,7 +94,7 @@ func TestApp_View_BeforeResize(t *testing.T) {
 }
 
 func TestApp_View_AfterResize(t *testing.T) {
-	app := NewApp()
+	app := NewApp("", "")
 	model, _ := app.Update(tea.WindowSizeMsg{Width: 100, Height: 30})
 	updated := model.(App)
 	view := updated.View()

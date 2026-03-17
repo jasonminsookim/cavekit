@@ -1,6 +1,6 @@
 ---
 created: "2026-03-17T00:00:00Z"
-last_edited: "2026-03-17T00:00:00Z"
+last_edited: "2026-03-17T12:00:00Z"
 ---
 
 # Spec: Terminal User Interface
@@ -120,8 +120,33 @@ The bubbletea-based TUI that replaces the current tmux split-pane layout. Render
 - Multiple project support (single project root per TUI instance)
 - Theming/color customization (uses sensible defaults)
 
+### R12: Tick-Driven Data Flow
+**Description:** The TUI must actively poll and update all data on each tick cycle, not just render static content.
+**Acceptance Criteria:**
+- [ ] On each 500ms tick: capture tmux pane content for selected instance's preview tab
+- [ ] On each tick: refresh diff stats for selected instance's diff tab
+- [ ] On each tick: call UpdateProgress for all active instances
+- [ ] On each tick: run AutoYes.Check for all active instances if auto-yes enabled
+- [ ] On each tick: update instance status via StatusDetector for all active instances
+- [ ] PreviewTab, DiffTab, TerminalTab are instantiated in App and their output piped to TabContent
+**Dependencies:** R1, R4, R5, blueprint-session R5, blueprint-session R6
+
+### R13: Action Handler Completeness
+**Description:** All mapped key actions must have corresponding handlers in App.Update.
+**Acceptance Criteria:**
+- [ ] ActionOpen: attaches to selected instance's tmux session via PTY, suspends TUI, returns on Ctrl+Q
+- [ ] ActionPush: pushes selected instance's worktree branch to remote (with confirmation overlay)
+- [ ] ActionCheckout: opens a shell in the selected instance's worktree directory
+- [ ] ActionResume: calls sessionMgr.Resume for paused instances
+- [ ] ActionScrollUp/Down: scrolls preview or diff tab content
+**Dependencies:** R1, blueprint-tmux R3
+
 ## Cross-References
 - See also: blueprint-session.md (TUI controls sessions)
 - See also: blueprint-tmux.md (preview captures)
 - See also: blueprint-site.md (progress data)
 - See also: blueprint-cli.md (TUI is launched by CLI)
+
+## Changes
+- 2026-03-17: Added R12 (Tick-Driven Data Flow) — discovered during inspection (finding F-001, F-002, F-004, F-005)
+- 2026-03-17: Added R13 (Action Handler Completeness) — discovered during inspection (finding F-003, F-006, F-008)

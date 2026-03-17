@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	osexec "os/exec"
@@ -47,13 +48,26 @@ func runMonitor() {
 		os.Exit(1)
 	}
 
-	// Load persisted state
-	store := session.NewStore("")
-	instances, _ := store.Load()
-	_ = instances // TODO: wire into TUI
+	// Determine project root
+	cwd, _ := os.Getwd()
+	executor := exec.NewRealExecutor()
+	wtMgr := worktree.NewManager(executor)
+	ctx := context.Background()
+	root, err := wtMgr.ProjectRoot(ctx, cwd)
+	if err != nil {
+		root = cwd
+	}
+
+	// Parse program flag
+	program := "claude"
+	for i, arg := range os.Args {
+		if (arg == "--program" || arg == "-p") && i+1 < len(os.Args) {
+			program = os.Args[i+1]
+		}
+	}
 
 	// Launch TUI
-	if err := tui.Run(); err != nil {
+	if err := tui.Run(root, program); err != nil {
 		fmt.Fprintf(os.Stderr, "TUI error: %s\n", err)
 		os.Exit(1)
 	}
