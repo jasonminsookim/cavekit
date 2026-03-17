@@ -70,7 +70,7 @@ This pattern prevents loading the entire documentation tree into the context win
 Two techniques keep documents focused and navigable:
 
 - **Decomposition** — break large documents into domain-specific files
-- **Spec compaction** — compress implementation tracking when files exceed approximately 500 lines (see `sdd:impl-tracking`)
+- **Spec compaction** — compress implementation tracking when files exceed approximately 500 lines (see `blueprint:impl-tracking`)
 
 Together, these ensure that the context an agent loads is dense with relevant information rather than bloated with resolved history.
 
@@ -78,27 +78,27 @@ Together, these ensure that the context an agent loads is dense with relevant in
 
 ## Standard Context Directory Structure
 
-Every SDD project uses this directory layout:
+Every Blueprint project uses this directory layout:
 
 ```
 context/
-├── CLAUDE.md               # Root context: "This is an SDD project. See context/ for specs, plans, and tracking."
+├── CLAUDE.md               # Root context: "This is a Blueprint project. See context/ for blueprints, plans, and tracking."
 ├── refs/                   # Source of truth — reference materials
 │   ├── prd.md              # Product requirements document
 │   ├── design-doc.md       # Architecture/design documents
 │   ├── api-draft.md        # API specifications
 │   └── research/           # Framework research, competitive analysis
 │       └── ...
-├── specs/                  # Implementation-agnostic specifications
-│   ├── CLAUDE.md           # "Specs define WHAT needs implementing. Never prescribe HOW."
-│   ├── spec-overview.md    # START HERE — index of all domain specs
-│   ├── spec-auth.md        # Domain: Authentication
-│   ├── spec-data-models.md # Domain: Data Models
-│   ├── spec-api.md         # Domain: API
-│   └── spec-ui.md          # Domain: UI Components
+├── blueprints/             # Implementation-agnostic blueprints
+│   ├── CLAUDE.md           # "Blueprints define WHAT needs implementing. Never prescribe HOW."
+│   ├── blueprint-overview.md    # START HERE — index of all domain blueprints
+│   ├── blueprint-auth.md        # Domain: Authentication
+│   ├── blueprint-data-models.md # Domain: Data Models
+│   ├── blueprint-api.md         # Domain: API
+│   └── blueprint-ui.md          # Domain: UI Components
 ├── plans/                  # Framework-specific implementation plans
 │   ├── CLAUDE.md           # "Plans define HOW to implement something using {FRAMEWORK}."
-│   ├── plan-feature-frontier.md  # Tier system showing feature dependencies
+│   ├── plan-build-site.md        # Tier system showing feature dependencies
 │   ├── plan-known-issues.md      # Prioritized backlog (P0-P3)
 │   ├── plan-auth.md              # Implementation plan: Authentication
 │   ├── plan-data-models.md       # Implementation plan: Data Models
@@ -108,8 +108,8 @@ context/
 │   ├── impl-all.md         # Current tracking document
 │   └── archive/            # Compacted/archived tracking docs
 │       └── impl-all-v1.md
-└── prompts/                # BPER pipeline prompts
-    ├── 001-generate-specs.md
+└── prompts/                # DABI pipeline prompts
+    ├── 001-generate-blueprints.md
     ├── 002-generate-plans.md
     └── 003-implement.md
 ```
@@ -118,26 +118,26 @@ context/
 
 #### `refs/` — Reference Materials
 
-- **Purpose:** Source of truth that specs are derived from
+- **Purpose:** Source of truth that blueprints are derived from
 - **Contents:** PRDs, design documents, API drafts, language specifications, old code documentation
 - **Convention:** Files are read-only after initial placement. Agents read but do not modify.
 - **Naming:** Descriptive names prefixed by type (e.g., `ref-apis.md`, `ref-data-models.md`, `ref-architecture.md`)
 
-#### `specs/` — Specifications
+#### `blueprints/` — Blueprints
 
 - **Purpose:** Implementation-agnostic requirements with testable acceptance criteria
-- **Contents:** One `spec-{domain}.md` per domain, plus `spec-overview.md` as the index
-- **Convention:** Specs describe WHAT, never HOW. Every requirement has acceptance criteria.
-- **Naming:** `spec-{domain}.md` — lowercase, hyphenated domain name
-- **Updates:** Modified during Spec phase and via backpropagation in Iterate phase
+- **Contents:** One `blueprint-{domain}.md` per domain, plus `blueprint-overview.md` as the index
+- **Convention:** Blueprints describe WHAT, never HOW. Every requirement has acceptance criteria.
+- **Naming:** `blueprint-{domain}.md` — lowercase, hyphenated domain name
+- **Updates:** Modified during Draft phase and via revision in Inspect phase
 
 #### `plans/` — Implementation Plans
 
 - **Purpose:** Framework-specific implementation plans derived from specs
-- **Contents:** One `plan-{domain}.md` per domain, plus `plan-feature-frontier.md` and `plan-known-issues.md`
-- **Convention:** Plans reference specs by requirement ID (e.g., "implements spec-auth.md R1-R3"). Plans define implementation sequence, dependencies, and test strategies.
-- **Naming:** `plan-{domain}.md` — matches corresponding spec domain
-- **Updates:** Modified during Plan phase. May be updated by Implementation phase (bidirectional flow).
+- **Contents:** One `plan-{domain}.md` per domain, plus `plan-build-site.md` and `plan-known-issues.md`
+- **Convention:** Plans reference blueprints by requirement ID (e.g., "implements blueprint-auth.md R1-R3"). Plans define implementation sequence, dependencies, and test strategies.
+- **Naming:** `plan-{domain}.md` — matches corresponding blueprint domain
+- **Updates:** Modified during Architect phase. May be updated by Build phase (bidirectional flow).
 
 #### `impl/` — Implementation Tracking
 
@@ -145,11 +145,11 @@ context/
 - **Contents:** `impl-all.md` (or domain-specific `impl-{domain}.md`), plus `archive/` for compacted history
 - **Convention:** Updated after every implementation session. Dead ends are critical — they prevent agents from retrying failed approaches.
 - **Naming:** `impl-{scope}.md` — scope can be "all" or a specific domain
-- **Updates:** Modified during Implement and Iterate phases. Compacted when exceeding 500 lines.
+- **Updates:** Modified during Build and Inspect phases. Compacted when exceeding 500 lines.
 
 #### `prompts/` — Pipeline Prompts
 
-- **Purpose:** Numbered prompts that drive each BPER phase
+- **Purpose:** Numbered prompts that drive each DABI phase
 - **Contents:** One prompt per phase, numbered sequentially
 - **Convention:** Prompts use runtime variables (`{FRAMEWORK}`, `{BUILD_COMMAND}`, `{TEST_COMMAND}`) for project-agnostic execution. Each prompt specifies its input and output directories.
 - **Naming:** `NNN-{action}.md` — three-digit number, descriptive action
@@ -193,10 +193,10 @@ When an agent works in `src/auth/`, it loads:
 ```markdown
 # Project: {Project Name}
 
-This project uses Spec-Driven Development (SDD).
+This project uses Blueprint.
 
 ## Context Directory
-- Specs: context/specs/ (WHAT to build)
+- Blueprints: context/blueprints/ (WHAT to build)
 - Plans: context/plans/ (HOW to build it with {FRAMEWORK})
 - Impl Tracking: context/impl/ (progress, dead ends, test health)
 - References: context/refs/ (source materials)
@@ -207,15 +207,15 @@ This project uses Spec-Driven Development (SDD).
 - Lint: {LINT_COMMAND}
 ```
 
-**`context/specs/CLAUDE.md`:**
+**`context/blueprints/CLAUDE.md`:**
 ```markdown
-# Specifications
+# Blueprints
 
-Specs define WHAT needs implementing. They are implementation-agnostic.
+Blueprints define WHAT needs implementing. They are implementation-agnostic.
 
 ## Conventions
-- Start with spec-overview.md for the domain index
-- Each spec uses the R1, R2, R3... requirement numbering
+- Start with blueprint-overview.md for the domain index
+- Each blueprint uses the R1, R2, R3... requirement numbering
 - Every requirement has testable acceptance criteria
 - Never prescribe HOW — that belongs in plans/
 ```
@@ -224,12 +224,12 @@ Specs define WHAT needs implementing. They are implementation-agnostic.
 ```markdown
 # Implementation Plans
 
-Plans define HOW to implement specifications using {FRAMEWORK}.
+Plans define HOW to implement blueprints using {FRAMEWORK}.
 
 ## Conventions
-- Each plan references spec requirements by ID (e.g., "implements spec-auth.md R1")
+- Each plan references blueprint requirements by ID (e.g., "implements blueprint-auth.md R1")
 - Plans include implementation sequence and dependencies
-- plan-feature-frontier.md shows the dependency tier system
+- plan-build-site.md shows the dependency tier system
 - plan-known-issues.md tracks the prioritized backlog (P0-P3)
 ```
 
@@ -249,7 +249,7 @@ Impls record implementation progress. Update after every session.
 
 ## Multi-Repo Strategy
 
-For projects that need to evaluate multiple frameworks or maintain shared specs across implementations, SDD uses a **shared base context** with framework-specific repos.
+For projects that need to evaluate multiple frameworks or maintain shared blueprints across implementations, Blueprint uses a **shared base context** with framework-specific repos.
 
 ### The 3-Tier Hierarchy
 
@@ -264,16 +264,16 @@ Tier 1: Shared Context (What IS)
 
 Tier 2: Shared Context (What MUST BE)
 └── shared-context/
-    └── specs/                  # Implementation-agnostic specifications
-        ├── spec-overview.md
-        ├── spec-features.md
-        ├── spec-ui-requirements.md
+    └── blueprints/              # Implementation-agnostic blueprints
+        ├── blueprint-overview.md
+        ├── blueprint-features.md
+        ├── blueprint-ui-requirements.md
         └── feature-scope.md
 
 Tier 3: Application Context (per framework)
 └── context/                    # Framework-specific
     ├── plans/                  # Plans using {FRAMEWORK}
-    │   ├── plan-feature-frontier.md
+    │   ├── plan-build-site.md
     │   └── plan-{domain}.md
     ├── impl/                   # Implementation tracking
     │   └── impl-all.md
@@ -283,10 +283,10 @@ Tier 3: Application Context (per framework)
 
 ### How It Works
 
-1. **Tier 1 (Reference)** and **Tier 2 (Specs)** live in a shared repository
+1. **Tier 1 (Reference)** and **Tier 2 (Blueprints)** live in a shared repository
 2. **Tier 3 (Plans + Impl)** lives in each framework-specific repository
 3. The shared repo is included as a **git submodule** in each framework repo
-4. Updates to specs propagate to all implementations via `git submodule update`
+4. Updates to blueprints propagate to all implementations via `git submodule update`
 
 ### Directory Layout with Submodules
 
@@ -294,7 +294,7 @@ Tier 3: Application Context (per framework)
 my-app-react/                   # React implementation
 ├── shared-context/             # Git submodule → shared specs repo
 │   ├── reference/
-│   └── specs/
+│   └── blueprints/
 ├── context/                    # React-specific
 │   ├── plans/
 │   ├── impl/
@@ -304,7 +304,7 @@ my-app-react/                   # React implementation
 my-app-vue/                     # Vue implementation
 ├── shared-context/             # Same git submodule → same specs
 │   ├── reference/
-│   └── specs/
+│   └── blueprints/
 ├── context/                    # Vue-specific
 │   ├── plans/
 │   ├── impl/
@@ -316,9 +316,9 @@ my-app-vue/                     # Vue implementation
 
 | Benefit | How |
 |---------|-----|
-| **Same specs, different stacks** | Shared specs drive both implementations identically |
+| **Same blueprints, different stacks** | Shared blueprints drive both implementations identically |
 | **Apples-to-apples comparison** | Framework evaluation uses the same requirements |
-| **Spec propagation** | Update specs once, all implementations pick up changes |
+| **Blueprint propagation** | Update blueprints once, all implementations pick up changes |
 | **Independent divergence** | Each implementation's plans and tracking are independent |
 
 ### Setting Up Submodules
@@ -349,8 +349,8 @@ Most projects use a single repo. The context directory lives alongside the sourc
 
 ```
 my-project/
-├── CLAUDE.md               # Project root — SDD conventions
-├── context/                # All SDD artifacts
+├── CLAUDE.md               # Project root — Blueprint conventions
+├── context/                # All Blueprint artifacts
 │   ├── refs/
 │   ├── specs/
 │   ├── plans/
@@ -361,7 +361,7 @@ my-project/
 └── package.json            # (or equivalent build config)
 ```
 
-This is the default and recommended setup. Only use multi-repo when you need shared specs across implementations.
+This is the default and recommended setup. Only use multi-repo when you need shared blueprints across implementations.
 
 ---
 
@@ -381,7 +381,7 @@ context/
 └── old-stuff.md
 ```
 
-**Right:** Use the standard directory structure. Specs in `specs/`, plans in `plans/`, tracking in `impl/`.
+**Right:** Use the standard directory structure. Blueprints in `blueprints/`, plans in `plans/`, tracking in `impl/`.
 
 ### 2. Missing CLAUDE.md Files
 
@@ -389,7 +389,7 @@ Without CLAUDE.md files, agents have no convention guidance when working in a di
 
 ### 3. Monolithic Documents
 
-A single 2000-line spec file defeats progressive disclosure. Decompose into domains with a `spec-overview.md` index.
+A single 2000-line blueprint file defeats progressive disclosure. Decompose into domains with a `blueprint-overview.md` index.
 
 ### 4. Stale Archives in Active Directories
 
@@ -399,21 +399,21 @@ Completed or archived content should be moved to `impl/archive/`, not left in th
 
 ## Integration with Other Skills
 
-### With `sdd:spec-writing`
+### With `blueprint:blueprint-writing`
 
-The context architecture defines WHERE specs live. The spec-writing skill defines HOW to write them. Specs go in `context/specs/` following the naming convention `spec-{domain}.md`.
+The context architecture defines WHERE blueprints live. The blueprint-writing skill defines HOW to write them. Blueprints go in `context/blueprints/` following the naming convention `blueprint-{domain}.md`.
 
-### With `sdd:impl-tracking`
+### With `blueprint:impl-tracking`
 
 Implementation tracking documents live in `context/impl/`. When they exceed 500 lines, compact them and archive the old version to `context/impl/archive/`.
 
-### With `sdd:validation-first`
+### With `blueprint:validation-first`
 
 Validation gate results are recorded in implementation tracking documents within the context structure. Phase gates reference specs by requirement ID.
 
-### With `sdd:sdd-methodology`
+### With `blueprint:methodology`
 
-The context directory structure is established during the Spec phase of BPER and maintained throughout the entire lifecycle.
+The context directory structure is established during the Spec phase of DABI and maintained throughout the entire lifecycle.
 
 ---
 

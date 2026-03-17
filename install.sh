@@ -3,7 +3,7 @@
 # SDD Installer
 #
 # Usage:
-#   git clone https://github.com/JuliusBrussee/sdd-os.git ~/.sdd && ~/.sdd/install.sh
+#   git clone https://github.com/JuliusBrussee/sdd-os.git ~/.blueprint && ~/.blueprint/install.sh
 
 set -euo pipefail
 
@@ -11,26 +11,28 @@ INSTALL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CLAUDE_DIR="$HOME/.claude"
 SETTINGS_FILE="$CLAUDE_DIR/settings.json"
 BIN_DIR="/usr/local/bin"
-MARKETPLACE_NAME="sdd-os"
+MARKETPLACE_NAME="blueprint"
 
 # ─── Colors ─────────────────────────────────────────────────────────────────
 
-R=$'\033[0m' B=$'\033[1m' GR=$'\033[32m' YL=$'\033[33m' CY=$'\033[36m' RD=$'\033[31m'
+R=$'\033[0m' B=$'\033[1m' GR=$'\033[32m' YL=$'\033[33m' BL=$'\033[34m' RD=$'\033[31m'
 
-info()  { printf "${CY}→${R} %s\n" "$1"; }
-ok()    { printf "${GR}✓${R} %s\n" "$1"; }
+info()  { printf "${BL}▸${R} %s\n" "$1"; }
+ok()    { printf "${GR}■${R} %s\n" "$1"; }
 warn()  { printf "${YL}!${R} %s\n" "$1"; }
 fail()  { printf "${RD}✗${R} %s\n" "$1" >&2; exit 1; }
 
 # ─── Header ─────────────────────────────────────────────────────────────────
 
-printf "\n${B}${CY}SDD — Spec-Driven Development${R}\n"
+printf "\n${B}${BL}  ┌──────────────────────────┐${R}\n"
+printf "${B}${BL}  │  B L U E P R I N T       │${R}\n"
+printf "${B}${BL}  └──────────────────────────┘${R}\n"
 printf "${B}Installer${R}\n\n"
 
 # ─── Preflight ──────────────────────────────────────────────────────────────
 
 command -v git &>/dev/null || fail "git not found."
-command -v claude &>/dev/null || warn "claude CLI not found. Install Claude Code to use /sdd:... commands."
+command -v claude &>/dev/null || warn "claude CLI not found. Install Claude Code to use /blueprint:... commands."
 command -v tmux &>/dev/null || warn "tmux not found. Install for the parallel launcher: brew install tmux"
 
 # ─── Register Claude Code plugin ───────────────────────────────────────────
@@ -51,7 +53,7 @@ if [[ ! -f "$SETTINGS_FILE" ]]; then
     }
   },
   "enabledPlugins": {
-    "sdd@${MARKETPLACE_NAME}": true
+    "blueprint@${MARKETPLACE_NAME}": true
   }
 }
 EOF
@@ -67,7 +69,7 @@ path, name, mpath = sys.argv[1], sys.argv[2], sys.argv[3]
 with open(path) as f:
     d = json.load(f)
 d.setdefault("extraKnownMarketplaces", {})[name] = {"source": {"source": "directory", "path": mpath}}
-d.setdefault("enabledPlugins", {})[f"sdd@{name}"] = True
+d.setdefault("enabledPlugins", {})[f"blueprint@{name}"] = True
 with open(path, "w") as f:
     json.dump(d, f, indent=2)
 PYEOF
@@ -76,30 +78,30 @@ PYEOF
       warn "Could not auto-update settings. Add manually to $SETTINGS_FILE:"
       printf "\n"
       printf '  "extraKnownMarketplaces": { "%s": { "source": { "source": "directory", "path": "%s" } } }\n' "$MARKETPLACE_NAME" "$MARKETPLACE_PATH"
-      printf '  "enabledPlugins": { "sdd@%s": true }\n\n' "$MARKETPLACE_NAME"
+      printf '  "enabledPlugins": { "blueprint@%s": true }\n\n' "$MARKETPLACE_NAME"
     fi
   fi
 fi
 
-# ─── Install sdd CLI ───────────────────────────────────────────────────────
+# ─── Install blueprint CLI ─────────────────────────────────────────────────
 
-info "Installing sdd command..."
+info "Installing blueprint command..."
 
-chmod +x "$INSTALL_DIR/scripts/sdd"
-chmod +x "$INSTALL_DIR/scripts/sdd-launch-session.sh"
-chmod +x "$INSTALL_DIR/scripts/sdd-status-poller.sh"
-chmod +x "$INSTALL_DIR/scripts/sdd-analytics.sh"
+chmod +x "$INSTALL_DIR/scripts/blueprint"
+chmod +x "$INSTALL_DIR/scripts/blueprint-launch-session.sh"
+chmod +x "$INSTALL_DIR/scripts/blueprint-status-poller.sh"
+chmod +x "$INSTALL_DIR/scripts/blueprint-analytics.sh"
 chmod +x "$INSTALL_DIR/scripts/dashboard-progress.sh"
 chmod +x "$INSTALL_DIR/scripts/dashboard-activity.sh"
-chmod +x "$INSTALL_DIR/scripts/setup-execute.sh"
+chmod +x "$INSTALL_DIR/scripts/setup-build.sh"
 
 if [[ -w "$BIN_DIR" ]]; then
-  ln -sf "$INSTALL_DIR/scripts/sdd" "$BIN_DIR/sdd"
-  ok "Installed sdd to $BIN_DIR/sdd"
+  ln -sf "$INSTALL_DIR/scripts/blueprint" "$BIN_DIR/blueprint"
+  ok "Installed blueprint to $BIN_DIR/blueprint"
 else
-  info "Need sudo to install sdd to $BIN_DIR"
-  sudo ln -sf "$INSTALL_DIR/scripts/sdd" "$BIN_DIR/sdd"
-  ok "Installed sdd to $BIN_DIR/sdd"
+  info "Need sudo to install blueprint to $BIN_DIR"
+  sudo ln -sf "$INSTALL_DIR/scripts/blueprint" "$BIN_DIR/blueprint"
+  ok "Installed blueprint to $BIN_DIR/blueprint"
 fi
 
 # ─── Done ───────────────────────────────────────────────────────────────────
@@ -107,17 +109,17 @@ fi
 printf "\n${B}${GR}Installed!${R}\n\n"
 
 printf "  ${B}Terminal:${R}\n"
-printf "    sdd --monitor                 Pick frontiers and launch agents\n"
-printf "    sdd --monitor --expanded      One tmux window per frontier\n"
-printf "    sdd --status                  Show frontier progress\n"
-printf "    sdd --analytics               Show loop trends\n"
-printf "    sdd --kill                    Stop sessions and clean worktrees\n"
+printf "    blueprint --monitor                 Pick build sites and launch agents\n"
+printf "    blueprint --monitor --expanded      One tmux window per build site\n"
+printf "    blueprint --status                  Show build site progress\n"
+printf "    blueprint --analytics               Show loop trends\n"
+printf "    blueprint --kill                    Stop sessions and clean worktrees\n"
 printf "\n"
 printf "  ${B}Claude:${R}\n"
-printf "    /sdd:brainstorm               Write specs\n"
-printf "    /sdd:plan                     Generate frontier\n"
-printf "    /sdd:execute                  Run the build loop\n"
-printf "    /sdd:review                   Post-loop review\n"
-printf "    /sdd:merge                    Merge completed SDD branches\n"
+printf "    /blueprint:draft                    Draft blueprints\n"
+printf "    /blueprint:architect                Architect build sites\n"
+printf "    /blueprint:build                    Build from blueprints\n"
+printf "    /blueprint:inspect                  Inspect the build\n"
+printf "    /blueprint:merge                    Merge completed Blueprint branches\n"
 printf "\n"
 printf "  Restart Claude Code to load the plugin.\n\n"

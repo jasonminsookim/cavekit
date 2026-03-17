@@ -2,7 +2,7 @@
 name: validation-first
 description: |
   Validation-first design for AI agent output — every spec requirement must be automatically verifiable.
-  Covers the 6-gate validation pipeline, phase gates between BPER phases, merge protocol,
+  Covers the 6-gate validation pipeline, phase gates between DABI phases, merge protocol,
   completion signals, and acceptance criteria design patterns.
   Trigger phrases: "validation gates", "quality gates", "validation-first design",
   "how to validate agent output", "acceptance criteria design"
@@ -218,7 +218,7 @@ curl -f http://localhost:{PORT}/health
 
 ## Mapping Spec Requirements to Gates
 
-Every spec requirement must map to at least one validation gate. When writing specs (see `sdd:spec-writing`), each acceptance criterion should indicate which gate verifies it.
+Every spec requirement must map to at least one validation gate. When writing specs (see `blueprint:blueprint-writing`), each acceptance criterion should indicate which gate verifies it.
 
 ### Mapping Pattern
 
@@ -242,9 +242,9 @@ Either way, an unmapped requirement will not be reliably met by an agent.
 
 ---
 
-## Phase Gates Between BPER Phases
+## Phase Gates Between DABI Phases
 
-Phase gates are mandatory verification checkpoints between BPER phases. They ensure that the output of one phase is solid before the next phase builds on it.
+Phase gates are mandatory verification checkpoints between DABI phases. They ensure that the output of one phase is solid before the next phase builds on it.
 
 ### Phase Gate Definitions
 
@@ -423,19 +423,19 @@ The existing `verification-before-completion` skill provides a general framework
 
 **How they work together:**
 - `superpowers:verification-before-completion` ensures the agent checks its work
-- `sdd:validation-first` defines exactly what checks to run and in what order
+- `blueprint:validation-first` defines exactly what checks to run and in what order
 
-### With `sdd:spec-writing`
+### With `blueprint:blueprint-writing`
 
 Every spec requirement must have acceptance criteria that map to validation gates. The spec-writing skill defines how to write those criteria. Validation-first design defines how to verify them.
 
-### With `sdd:impl-tracking`
+### With `blueprint:impl-tracking`
 
 Validation results are recorded in the implementation tracking document's Test Health table. Gate failures become Issues. Gate-related dead ends are documented in the Dead Ends section.
 
-### With `sdd:sdd-methodology`
+### With `blueprint:methodology`
 
-Validation gates operate continuously across all BPER phases. Phase gates control transitions between phases. The iteration loop uses gate results as convergence signals.
+Validation gates operate continuously across all DABI phases. Phase gates control transitions between phases. The iteration loop uses gate results as convergence signals.
 
 ---
 
@@ -445,7 +445,7 @@ Validation gates operate continuously across all BPER phases. Phase gates contro
 2. **6 gates in order:** Compilation → Unit Verification → Integration → Benchmarks → Smoke Test → Manual Audit
 3. **Earlier gates are cheaper** — catch problems at the build stage, not at launch
 4. **Every spec requirement maps to at least one gate** — unmapped requirements are unvalidated
-5. **Phase gates control BPER transitions** — do not proceed until the current phase passes its gate
+5. **Phase gates control DABI transitions** — do not proceed until the current phase passes its gate
 6. **Merge one at a time** — validate between each merge to pinpoint failures
 7. **Completion signals enable automation** — agents emit a specific string when all gates pass
 8. **Regression is P0** — when a passing gate starts failing, stop and fix before proceeding

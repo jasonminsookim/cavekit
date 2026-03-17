@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# sdd-launch-session — Creates a tmux session with one pane per frontier.
-# Each pane runs Claude in its own git worktree with /sdd:execute.
+# blueprint-launch-session — Creates a tmux session with one pane per build site.
+# Each pane runs Claude in its own git worktree with /blueprint:build.
 #
-# Usage: sdd-launch-session.sh [--expanded] <frontier-path> [<frontier-path> ...]
+# Usage: blueprint-launch-session.sh [--expanded] <frontier-path> [<frontier-path> ...]
 #
 # Default: all panes in one window (horizontal for 2-3, tiled for 4+)
 # --expanded: one window per frontier with progress+activity dashboard panes
@@ -11,7 +11,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SESSION_NAME="sdd"
+SESSION_NAME="blueprint"
 EXPANDED=false
 STAGGER_DELAY=5
 
@@ -25,7 +25,7 @@ fi
 FRONTIERS=("$@")
 
 if [[ ${#FRONTIERS[@]} -eq 0 ]]; then
-  echo "Usage: sdd-launch-session.sh [--expanded] <frontier-path> ..." >&2
+  echo "Usage: blueprint-launch-session.sh [--expanded] <frontier-path> ..." >&2
   exit 1
 fi
 
@@ -46,7 +46,7 @@ fi
 # ─── Derive frontier names ───────────────────────────────────────────────────
 
 derive_name() {
-  basename "$1" .md | sed -E 's/^(plan-|feature-frontier-|feature-)//' | sed 's/-frontier$//'
+  basename "$1" .md | sed -E 's/^(plan-|feature-frontier-|feature-|build-site-)//' | sed 's/-frontier$//'
 }
 
 # ─── Create worktrees ────────────────────────────────────────────────────────
@@ -58,8 +58,8 @@ RESUMING=()  # "true" or "false" per frontier
 for frontier in "${FRONTIERS[@]}"; do
   name=$(derive_name "$frontier")
   NAMES+=("$name")
-  worktree_path="${PROJECT_ROOT}/../${PROJECT_NAME}-sdd-${name}"
-  branch_name="sdd/${name}"
+  worktree_path="${PROJECT_ROOT}/../${PROJECT_NAME}-blueprint-${name}"
+  branch_name="blueprint/${name}"
 
   if [[ -d "$worktree_path" ]]; then
     echo "  Worktree exists: $worktree_path"
@@ -105,7 +105,7 @@ write_launcher() {
   local name="$3"
   local resuming="$4"
   local launcher
-  launcher=$(mktemp /tmp/sdd-launch-${name}-XXXXXX.sh)
+  launcher=$(mktemp /tmp/blueprint-launch-${name}-XXXXXX.sh)
 
   local frontier_basename
   frontier_basename=$(basename "$frontier_path")
@@ -121,7 +121,7 @@ write_launcher() {
 #!/bin/bash
 rm -f "$launcher"
 cd "$worktree"
-echo "SDD Agent: $name [$mode_label]"
+echo "Blueprint Agent: $name [$mode_label]"
 echo "Worktree: $worktree"
 echo "Frontier: $frontier_basename"
 echo ""
@@ -163,11 +163,11 @@ if [[ "$EXPANDED" == "true" ]]; then
 
     tmux split-window -h -t "$SESSION_NAME:${WIN_IDX}" -l "$RIGHT_WIDTH" -c "$worktree" \
       "exec bash \"$SCRIPT_DIR/dashboard-progress.sh\""
-    tmux select-pane -T "sdd-progress"
+    tmux select-pane -T "blueprint-progress"
 
     tmux split-window -v -t "$SESSION_NAME:${WIN_IDX}" -c "$worktree" \
       "exec bash \"$SCRIPT_DIR/dashboard-activity.sh\""
-    tmux select-pane -T "sdd-activity"
+    tmux select-pane -T "blueprint-activity"
 
     # Focus main pane
     tmux select-pane -t "$SESSION_NAME:${WIN_IDX}.0"
@@ -192,7 +192,7 @@ else
     launcher=$(write_launcher "$worktree" "$wt_frontier" "$name" "${RESUMING[$i]}")
 
     if [[ "$FIRST" == "true" ]]; then
-      tmux new-session -d -s "$SESSION_NAME" -n "sdd-agents" -c "$worktree" \
+      tmux new-session -d -s "$SESSION_NAME" -n "blueprint-agents" -c "$worktree" \
         "bash $launcher; exec bash"
       FIRST=false
     else
@@ -215,16 +215,16 @@ else
   tmux select-pane -t "$SESSION_NAME:0.0"
 fi
 
-# ─── Staggered /sdd:execute launch ──────────────────────────────────────────
+# ─── Staggered /blueprint:build launch ──────────────────────────────────────
 
-# Background process that sends /sdd:execute to NEW panes (resumed ones already have context)
+# Background process that sends /blueprint:build to NEW panes (resumed ones already have context)
 (
   sleep 3  # Wait for Claude instances to start
 
   for i in "${!NAMES[@]}"; do
     name="${NAMES[$i]}"
 
-    # Resumed sessions already have their loop — skip sending /sdd:execute
+    # Resumed sessions already have their loop — skip sending /blueprint:build
     if [[ "${RESUMING[$i]}" == "true" ]]; then
       continue
     fi
@@ -235,7 +235,7 @@ fi
       target="$SESSION_NAME:0.${i}"
     fi
 
-    tmux send-keys -t "$target" "/sdd:execute --filter ${name}" Enter
+    tmux send-keys -t "$target" "/blueprint:build --filter ${name}" Enter
 
     # Stagger between launches (skip delay after last one)
     sleep "$STAGGER_DELAY"
@@ -244,8 +244,8 @@ fi
 
 # ─── Start status poller ────────────────────────────────────────────────────
 
-if [[ -x "$SCRIPT_DIR/sdd-status-poller.sh" ]]; then
-  "$SCRIPT_DIR/sdd-status-poller.sh" &
+if [[ -x "$SCRIPT_DIR/blueprint-status-poller.sh" ]]; then
+  "$SCRIPT_DIR/blueprint-status-poller.sh" &
 fi
 
 # ─── Enable mouse mode ───────────────────────────────────────────────────────
@@ -255,7 +255,7 @@ tmux set-option -t "$SESSION_NAME" mouse on 2>/dev/null || true
 # ─── Report & attach ────────────────────────────────────────────────────────
 
 echo ""
-echo "Launched ${#FRONTIERS[@]} SDD agents:"
+echo "Launched ${#FRONTIERS[@]} Blueprint agents:"
 for i in "${!NAMES[@]}"; do
   echo "  ${NAMES[$i]} → ${WORKTREES[$i]}"
 done
@@ -266,7 +266,7 @@ if [[ "$EXPANDED" == "true" ]]; then
   echo "  Switch windows: Ctrl-b + number"
 fi
 echo "  Detach: Ctrl-b d"
-echo "  Kill all: sdd --kill"
+echo "  Kill all: blueprint --kill"
 echo ""
 
 exec tmux attach-session -t "$SESSION_NAME"

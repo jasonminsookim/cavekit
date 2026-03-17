@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# sdd-analytics — Show trends across SDD execution cycles.
+# blueprint-analytics — Show trends across Blueprint execution cycles.
 # Parses loop-log.md files (current + archived) to extract:
 #   - Iterations to convergence per cycle
 #   - Common failure patterns (dead ends, blocked tasks)
@@ -19,7 +19,7 @@ D=$'\033[2m'
 GR=$'\033[32m'
 YL=$'\033[33m'
 RD=$'\033[31m'
-CY=$'\033[36m'
+BL=$'\033[34m'
 
 PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 
@@ -37,7 +37,7 @@ done
 
 # Also check worktrees
 PROJECT_NAME="$(basename "$PROJECT_ROOT")"
-for wt in "${PROJECT_ROOT}/../${PROJECT_NAME}-sdd-"*; do
+for wt in "${PROJECT_ROOT}/../${PROJECT_NAME}-blueprint-"*; do
   [[ -d "$wt" ]] || continue
   [[ -f "$wt/context/impl/loop-log.md" ]] && LOGS+=("$wt/context/impl/loop-log.md")
   for archive_log in "$wt"/context/impl/archive/*/loop-log.md; do
@@ -46,12 +46,15 @@ for wt in "${PROJECT_ROOT}/../${PROJECT_NAME}-sdd-"*; do
 done
 
 if [[ ${#LOGS[@]} -eq 0 ]]; then
-  echo "No loop logs found. Run /sdd:execute first."
+  echo "No loop logs found. Run /blueprint:build first."
   exit 0
 fi
 
-echo "${B}${CY}SDD Analytics${R}"
-echo "${D}$(printf '%.0s─' $(seq 1 60))${R}"
+printf "\n${B}${BL}  ┌──────────────────────────┐${R}\n"
+printf "${B}${BL}  │  B L U E P R I N T       │${R}\n"
+printf "${B}${BL}  └──────────────────────────┘${R}\n"
+printf "${B}${BL}  Analytics${R}\n"
+echo "${BL}${D}$(printf '%.0s─' $(seq 1 60))${R}"
 echo ""
 
 # ─── Parse iterations ─────────────────────────────────────────────────────────
@@ -64,7 +67,7 @@ total_blocked=0
 total_dead_ends=0
 
 # Use a temp file for tier counts (avoids bash 3 associative array limitation)
-TIER_FILE=$(mktemp /tmp/sdd-tiers-XXXXXX)
+TIER_FILE=$(mktemp /tmp/blueprint-tiers-XXXXXX)
 trap 'rm -f "$TIER_FILE"' EXIT
 
 for log in "${LOGS[@]}"; do
@@ -98,7 +101,7 @@ for log in "${LOGS[@]}"; do
 done
 
 # Count dead ends from impl files
-for impl_dir in "$PROJECT_ROOT/context/impl" "${PROJECT_ROOT}/../${PROJECT_NAME}-sdd-"*/context/impl; do
+for impl_dir in "$PROJECT_ROOT/context/impl" "${PROJECT_ROOT}/../${PROJECT_NAME}-blueprint-"*/context/impl; do
   [[ -d "$impl_dir" ]] || continue
   for impl in "$impl_dir"/impl-*.md "$impl_dir"/archive/*/impl-*.md; do
     [[ -f "$impl" ]] || continue
@@ -143,7 +146,7 @@ if [[ $total_dead_ends -gt 0 ]]; then
   echo "  ${RD}Dead ends:${R} ${B}${total_dead_ends}${R}"
 
   echo "  ${D}Recent dead ends:${R}"
-  for impl_dir in "$PROJECT_ROOT/context/impl" "${PROJECT_ROOT}/../${PROJECT_NAME}-sdd-"*/context/impl; do
+  for impl_dir in "$PROJECT_ROOT/context/impl" "${PROJECT_ROOT}/../${PROJECT_NAME}-blueprint-"*/context/impl; do
     [[ -d "$impl_dir" ]] || continue
     for impl in "$impl_dir"/impl-*.md; do
       [[ -f "$impl" ]] || continue
@@ -198,9 +201,9 @@ echo ""
 
 echo "${B}Active Agents${R}"
 active_count=0
-for wt in "${PROJECT_ROOT}/../${PROJECT_NAME}-sdd-"*; do
+for wt in "${PROJECT_ROOT}/../${PROJECT_NAME}-blueprint-"*; do
   [[ -d "$wt" ]] || continue
-  name=$(basename "$wt" | sed "s/^${PROJECT_NAME}-sdd-//")
+  name=$(basename "$wt" | sed "s/^${PROJECT_NAME}-blueprint-//")
   if [[ -f "$wt/.claude/ralph-loop.local.md" ]]; then
     iter=$(grep -m1 '^iteration:' "$wt/.claude/ralph-loop.local.md" 2>/dev/null | awk '{print $2}' || echo "?")
     echo "  ${GR}⟳${R} ${name} — iteration ${iter}"

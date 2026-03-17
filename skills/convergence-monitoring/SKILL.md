@@ -407,7 +407,7 @@ With backpropagation:
 ## Cross-References
 
 - **Convergence patterns reference:** See `references/convergence-patterns.md` for the complete convergence pattern catalog with examples.
-- **Backpropagation:** See `sdd:backpropagation` skill for how tracing bugs to specs improves convergence.
-- **Prompt pipeline:** See `sdd:prompt-pipeline` skill for designing prompts with proper exit criteria and completion signals.
-- **Validation-first design:** See `sdd:validation-first` skill for building validation gates that provide convergence signals.
-- **Impl tracking:** See `sdd:impl-tracking` skill for tracking progress and detecting ceiling conditions.
+- **Backpropagation:** See `blueprint:revision` skill for how tracing bugs to specs improves convergence.
+- **Prompt pipeline:** See `blueprint:prompt-pipeline` skill for designing prompts with proper exit criteria and completion signals.
+- **Validation-first design:** See `blueprint:validation-first` skill for building validation gates that provide convergence signals.
+- **Impl tracking:** See `blueprint:impl-tracking` skill for tracking progress and detecting ceiling conditions.

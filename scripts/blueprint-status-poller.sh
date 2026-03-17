@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# sdd-status-poller — Background process that updates tmux pane/window titles
-# with per-frontier progress. Runs until the sdd session is gone.
+# blueprint-status-poller — Background process that updates tmux pane/window titles
+# with per-frontier progress. Runs until the blueprint session is gone.
 
 set -uo pipefail
 
-SESSION_NAME="sdd"
+SESSION_NAME="blueprint"
 POLL_INTERVAL=5
 TASK_ID_PATTERN='T-([A-Za-z0-9]+-)*[A-Za-z0-9]+'
 
@@ -58,14 +58,14 @@ get_status_icon() {
   local total="$3"
 
   if [[ "$total" -gt 0 && "$done" -ge "$total" ]]; then
-    echo "✓"
+    echo "■"
     return
   fi
 
   if [[ -f "$worktree/.claude/ralph-loop.local.md" ]]; then
     echo "⟳"
   else
-    echo "·"
+    echo "○"
   fi
 }
 
@@ -73,10 +73,10 @@ while tmux has-session -t "$SESSION_NAME" 2>/dev/null; do
   # Build status string for tmux status bar
   STATUS_PARTS=()
 
-  # Find all sdd worktrees
-  for wt in "${PROJECT_ROOT}/../${PROJECT_NAME}-sdd-"*; do
+  # Find all blueprint worktrees
+  for wt in "${PROJECT_ROOT}/../${PROJECT_NAME}-blueprint-"*; do
     [[ -d "$wt" ]] || continue
-    name=$(basename "$wt" | sed "s/^${PROJECT_NAME}-sdd-//")
+    name=$(basename "$wt" | sed "s/^${PROJECT_NAME}-blueprint-//")
     progress=$(count_frontier_progress "$wt")
     done_count="${progress%/*}"
     total_count="${progress#*/}"

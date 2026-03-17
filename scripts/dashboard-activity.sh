@@ -12,7 +12,7 @@ D=$'\033[2m'
 GR=$'\033[32m'
 YL=$'\033[33m'
 RD=$'\033[31m'
-CY=$'\033[36m'
+BL=$'\033[34m'
 EL=$'\033[K'
 TASK_ID_PATTERN='T-([A-Za-z0-9]+-)*[A-Za-z0-9]+'
 
@@ -30,8 +30,8 @@ render() {
 
   emit() { ((line < max)) && buf+="${1}${EL}"$'\n' && line=$((line + 1)); }
 
-  emit "${B}${CY} ACTIVITY${R}"
-  emit "${D}${hr}${R}"
+  emit "${B}${BL} ACTIVITY${R}"
+  emit "${BL}${D}${hr}${R}"
 
   # ── Recent iterations ──
   local log_file="context/impl/loop-log.md"
@@ -89,7 +89,7 @@ render() {
 
   # ── Git commits (pre-fetched before rendering) ──
   emit "${B} Git${R}"
-  emit "${D}${hr}${R}"
+  emit "${BL}${D}${hr}${R}"
 
   local git_output=""
   if git rev-parse --git-dir &>/dev/null; then

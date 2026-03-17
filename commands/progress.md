@@ -1,28 +1,28 @@
 ---
-name: sdd-progress
-description: "Show progress against the feature frontier — tasks done, in progress, blocked, remaining"
+name: blueprint-progress
+description: "Show progress against the build site — tasks done, in progress, blocked, remaining"
 argument-hint: "[--filter PATTERN]"
 ---
 
-# SDD Progress
+# Blueprint Progress
 
-Show the user a progress report by comparing the feature frontier against implementation tracking.
+Show the user a progress report by comparing the build site against implementation tracking.
 
-## Step 1: Find Frontier
+## Step 1: Find Site
 
-Look in `context/frontiers/` then `context/plans/` for `*frontier*` files. If `--filter` is set (parse from `$ARGUMENTS`), match against it.
+Look in `context/frontiers/` then `context/plans/` for `*site*` or `*frontier*` files. If `--filter` is set (parse from `$ARGUMENTS`), match against it.
 
-If no frontier found: "No frontier found. Run `/sdd:plan` first."
+If no site found: "No site found. Run `/blueprint:architect` first."
 
 ## Step 2: Read State
 
-1. Read the frontier file — catalog every task (T-number), its tier, spec requirement, and blockedBy
+1. Read the site file — catalog every task (T-number), its tier, blueprint requirement, and blockedBy
 2. Read all `context/impl/impl-*.md` files — extract task statuses (DONE, IN_PROGRESS, BLOCKED)
 3. Read `context/impl/loop-log.md` if it exists — get the latest iteration number and last task completed
 
 ## Step 3: Classify Tasks
 
-For each task in the frontier:
+For each task in the site:
 - **DONE** — marked done in impl tracking
 - **IN_PROGRESS** — marked in progress
 - **BLOCKED** — has unfinished blockedBy dependencies
@@ -32,7 +32,7 @@ For each task in the frontier:
 ## Step 4: Display Report
 
 ```markdown
-## SDD Progress
+## Blueprint Progress
 
 ### Summary
 | Status | Count | % |
@@ -50,9 +50,9 @@ For each task in the frontier:
 {tier name if any}
 
 ### Ready to Implement (next up)
-| Task | Title | Spec | Requirement |
+| Task | Title | Blueprint | Requirement |
 |------|-------|------|------------|
-| T-{id} | {title} | spec-{domain}.md | R{n} |
+| T-{id} | {title} | blueprint-{domain}.md | R{n} |
 
 ### Recently Completed
 | Task | Title | Iteration |

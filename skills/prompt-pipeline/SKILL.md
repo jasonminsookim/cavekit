@@ -1,16 +1,16 @@
 ---
 name: prompt-pipeline
 description: >
-  How to design the numbered prompt pipeline that drives BPER phases in Spec-Driven Development.
+  How to design the numbered prompt pipeline that drives DABI phases in Spec-Driven Development.
   Covers greenfield 3-prompt patterns, rewrite 6-9 prompt patterns, shared principles,
   prompt engineering best practices, task templates, and time guards.
-  Trigger phrases: "prompt pipeline", "design prompts for SDD", "create BPER prompts",
+  Trigger phrases: "prompt pipeline", "design prompts for SDD", "create DABI prompts",
   "pipeline prompts", "how many prompts do I need"
 ---
 
 # Prompt Pipeline Design
 
-The prompt pipeline is the engine of SDD. Each numbered prompt drives one phase of the BPER lifecycle (Spec, Plan, Implement, Iterate, Monitor). Prompts are structured markdown files that instruct an AI agent to perform a specific phase, with detailed information delegated to specs, plans, and reference materials.
+The prompt pipeline is the engine of SDD. Each numbered prompt drives one phase of the DABI lifecycle (Spec, Plan, Implement, Iterate, Monitor). Prompts are structured markdown files that instruct an AI agent to perform a specific phase, with detailed information delegated to specs, plans, and reference materials.
 
 **Core principle:** Prompts should be as lightweight and systemic as possible. They define the *process*, not the *content* -- specs and plans hold the content.
 
@@ -116,7 +116,7 @@ These principles apply regardless of whether the pipeline is greenfield, rewrite
 
 | Principle | Detail |
 |-----------|--------|
-| **One prompt per BPER phase** | Each prompt maps to exactly one phase. Do not combine phases. |
+| **One prompt per DABI phase** | Each prompt maps to exactly one phase. Do not combine phases. |
 | **Explicit input/output directories** | Every prompt declares what it reads and what it writes. No implicit side effects. |
 | **Git-based continuity** | Agents read git history (`git log`, `git diff`, `git status`) between iterations to understand what was done before. |
 | **Explicit done-conditions with termination markers** | Every prompt concludes with a verifiable checklist of conditions and a distinct output token that the iteration loop uses to detect completion. |
@@ -446,6 +446,6 @@ The iteration loop handles: iteration counting, timeouts, nudging idle agents, d
 
 - **Prompt engineering details:** See `references/prompt-engineering.md` for the complete reference on runtime inputs, spawn templates, task templates, time guards, and file ownership.
 - **Agent team patterns:** See `references/agent-team-patterns.md` for coordination patterns, batching, worktree isolation, and merge protocol.
-- **Convergence monitoring:** See `sdd:convergence-monitoring` skill for detecting when the iteration loop should stop.
-- **Backpropagation:** See `sdd:backpropagation` skill for how prompt 006 traces bugs back to specs.
-- **Context architecture:** See `sdd:context-architecture` skill for the directory structure that prompts read from and write to.
+- **Convergence monitoring:** See `blueprint:convergence-monitoring` skill for detecting when the iteration loop should stop.
+- **Backpropagation:** See `blueprint:revision` skill for how prompt 006 traces bugs back to specs.
+- **Context architecture:** See `blueprint:context-architecture` skill for the directory structure that prompts read from and write to.

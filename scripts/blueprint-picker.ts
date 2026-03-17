@@ -84,7 +84,7 @@ function discoverFrontiers(projectRoot: string): FrontierInfo[] {
 function deriveName(filename: string): string {
   return filename
     .replace(/\.md$/, "")
-    .replace(/^(plan-|feature-frontier-|feature-)/, "")
+    .replace(/^(plan-|feature-frontier-|feature-|build-site-)/, "")
     .replace(/-?frontier-?/, "")
     .replace(/^-|-$/g, "");
 }
@@ -122,7 +122,7 @@ function countDoneTasks(projectRoot: string, frontierContent: string): number {
     const parentDir = resolve(projectRoot, "..");
     const siblings = readdirSync(parentDir);
     for (const sibling of siblings) {
-      if (sibling.startsWith(`${projectName}-sdd-`)) {
+      if (sibling.startsWith(`${projectName}-blueprint-`)) {
         scanImplFilesForDone(join(parentDir, sibling, "context/impl"), doneSet);
       }
     }
@@ -150,7 +150,7 @@ function detectStatus(
 
   // Check if a worktree exists for this frontier
   const projectName = basename(projectRoot);
-  const worktreePath = resolve(projectRoot, `../${projectName}-sdd-${name}`);
+  const worktreePath = resolve(projectRoot, `../${projectName}-blueprint-${name}`);
   if (existsSync(worktreePath)) {
     // Check if ralph loop is active in the worktree
     const ralphState = join(worktreePath, ".claude/ralph-loop.local.md");
@@ -181,7 +181,7 @@ async function main() {
 
   if (frontiers.length === 0) {
     console.error("No frontiers found in context/frontiers/");
-    console.error("Run /sdd:plan first to generate one.");
+    console.error("Run /blueprint:architect first to generate one.");
     process.exit(1);
   }
 
@@ -233,7 +233,7 @@ async function main() {
 
   try {
     const selected = await checkbox({
-      message: "Select frontiers to launch",
+      message: "Select build sites to launch",
       choices,
       instructions: false,
       theme: {
@@ -250,7 +250,7 @@ async function main() {
     }
 
     // Write selected paths to outfile (env var) or stdout
-    const outfile = process.env.SDD_PICKER_OUTFILE;
+    const outfile = process.env.BLUEPRINT_PICKER_OUTFILE;
     const output = selected.join("\n") + "\n";
     if (outfile) {
       writeFileSync(outfile, output);

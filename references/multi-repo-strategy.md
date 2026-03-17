@@ -411,7 +411,7 @@ This directory contains framework-agnostic reference materials and specification
 ## Directory Structure
 - `reference/` -- Source of truth documentation (What IS)
 - `specs/` -- Implementation-agnostic specifications (What MUST BE)
-- `prompts/` -- Shared BPER prompts (spec-level phases only)
+- `prompts/` -- Shared DABI prompts (spec-level phases only)
 
 ## Conventions
 - Specs describe WHAT, never HOW

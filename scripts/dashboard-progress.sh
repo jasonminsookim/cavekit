@@ -12,8 +12,8 @@ D=$'\033[2m'
 GR=$'\033[32m'
 YL=$'\033[33m'
 RD=$'\033[31m'
-CY=$'\033[36m'
-BGG=$'\033[42m'
+BL=$'\033[34m'
+BGB=$'\033[44m'
 BGY=$'\033[43m'
 BGD=$'\033[100m'
 EL=$'\033[K'
@@ -59,8 +59,8 @@ render() {
 
   emit() { ((line < max)) && buf+="${1}${EL}"$'\n' && line=$((line + 1)); }
 
-  emit "${B}${CY} SDD PROGRESS${R}"
-  emit "${D}${hr}${R}"
+  emit "${B}${BL} BLUEPRINT${R}"
+  emit "${BL}${D}${hr}${R}"
 
   # ── Ralph Loop state ──
   local state_file=".claude/ralph-loop.local.md"
@@ -97,13 +97,13 @@ render() {
     # First: look for a frontier with an active worktree
     local project_name
     project_name="$(basename "$root")"
-    for f in $(find "context/frontiers" -maxdepth 1 -name "*frontier*.md" -type f 2>/dev/null | sort); do
+    for f in $(find "context/frontiers" -maxdepth 1 \( -name "*frontier*.md" -o -name "*site*.md" \) -type f 2>/dev/null | sort); do
       [[ "$f" == *"/archive/"* ]] && continue
       local bn wt_name wt_path
       bn="$(basename "$f" .md)"
-      wt_name=$(echo "$bn" | sed -E 's/^(plan-|feature-frontier-|feature-)//' | sed -E 's/-?frontier-?//' | sed -E 's/^-|-$//g')
-      [[ -z "$wt_name" ]] && wt_name="execute"
-      wt_path="${root}/../${project_name}-sdd-${wt_name}"
+      wt_name=$(echo "$bn" | sed -E 's/^(plan-|feature-frontier-|feature-|build-site-)//' | sed -E 's/-?frontier-?//' | sed -E 's/^-|-$//g')
+      [[ -z "$wt_name" ]] && wt_name="build"
+      wt_path="${root}/../${project_name}-blueprint-${wt_name}"
       if [[ -d "$wt_path" && -f "$wt_path/.claude/ralph-loop.local.md" ]]; then
         frontier="$f"
         break
@@ -111,7 +111,7 @@ render() {
     done
     # Fallback: first non-archived frontier
     if [[ -z "$frontier" ]]; then
-      frontier=$(find "context/frontiers" -maxdepth 1 -name "*frontier*.md" -type f 2>/dev/null | grep -v '/archive/' | sort | head -1)
+      frontier=$(find "context/frontiers" -maxdepth 1 \( -name "*frontier*.md" -o -name "*site*.md" \) -type f 2>/dev/null | grep -v '/archive/' | sort | head -1)
     fi
   fi
 
@@ -162,7 +162,7 @@ render() {
 
   # ── Progress bar ──
   emit "${B} Tasks${R}"
-  emit "${D}${hr}${R}"
+  emit "${BL}${D}${hr}${R}"
 
   if [[ $total -gt 0 ]]; then
     local bar_w=$((cols - 8))
@@ -175,7 +175,7 @@ render() {
     [[ $empty -lt 0 ]] && empty=0
 
     local bar=""
-    [[ $filled -gt 0 ]] && bar+=$(printf "${BGG}%*s${R}" "$filled" "")
+    [[ $filled -gt 0 ]] && bar+=$(printf "${BGB}%*s${R}" "$filled" "")
     [[ $wip_w -gt 0 ]] && bar+=$(printf "${BGY}%*s${R}" "$wip_w" "")
     [[ $empty -gt 0 ]] && bar+=$(printf "${BGD}%*s${R}" "$empty" "")
 
@@ -191,7 +191,7 @@ render() {
 
   # ── Tiers ──
   emit "${B} Tiers${R}"
-  emit "${D}${hr}${R}"
+  emit "${BL}${D}${hr}${R}"
 
   local cur_tier="" tier_total=0 tier_done=0
   while IFS= read -r tline; do
@@ -228,13 +228,13 @@ render() {
   done
   [[ $dead_ends -gt 0 ]] && emit "  ${RD}Dead ends: ${dead_ends}${R}" && emit ""
 
-  # ── Adversarial ──
-  local findings_file="context/impl/adversarial-findings.md"
+  # ── Peer Review ──
+  local findings_file="context/impl/peer-review-findings.md"
   if [[ -f "$findings_file" ]]; then
     local critical=$(grep -ciE 'CRITICAL' "$findings_file" 2>/dev/null || true)
     local high=$(grep -ciE '\bHIGH\b' "$findings_file" 2>/dev/null || true)
-    emit "${B} Adversarial${R}"
-    emit "${D}${hr}${R}"
+    emit "${B} Peer Review${R}"
+    emit "${BL}${D}${hr}${R}"
     [[ $critical -gt 0 ]] && emit "  ${RD}CRITICAL${R} ${critical}"
     [[ $high -gt 0 ]] && emit "  ${YL}HIGH${R}     ${high}"
     [[ $critical -eq 0 && $high -eq 0 ]] && emit "  ${GR}Clean${R}"

@@ -1,24 +1,24 @@
 ---
-name: sdd-brainstorm
-description: "Write specs: decompose what you're building into domains with testable requirements"
+name: blueprint-draft
+description: "Write blueprints: decompose what you're building into domains with testable requirements"
 argument-hint: "[REFS_PATH | --from-code] [--filter PATTERN]"
 ---
 
-# SDD Brainstorm — Write Specs
+# Blueprint Draft — Write Blueprints
 
-This is the first phase of SDD. You are writing implementation-agnostic specifications that define WHAT to build.
+This is the first phase of Blueprint. You are writing implementation-agnostic blueprints that define WHAT to build.
 
 ## Determine Mode
 
 Parse `$ARGUMENTS`:
-- If `--from-code` → **Brownfield mode** (reverse-engineer specs from existing code)
-- If a path is given → **Refs mode** (generate specs from reference materials at that path)
+- If `--from-code` → **Brownfield mode** (reverse-engineer blueprints from existing code)
+- If a path is given → **Refs mode** (generate blueprints from reference materials at that path)
 - If no arguments → **Interactive mode** (ask the user what to build)
 
 ## Step 1: Ensure Directories Exist
 
 Create these if missing (no separate init needed):
-- `context/specs/`
+- `context/blueprints/`
 - `context/frontiers/`
 - `context/impl/`
 - `context/impl/archive/`
@@ -30,14 +30,14 @@ Create these if missing (no separate init needed):
 
 Ask the user:
 1. "What are you building?" — get a description
-2. "Do you have reference materials? (PRDs, API docs, design specs, research)" — if yes, ask where they are and read them
+2. "Do you have reference materials? (PRDs, API docs, design blueprints, research)" — if yes, ask where they are and read them
 3. "Is there existing code to build on?" — if yes, explore the codebase
 
 Use the answers to decompose into domains.
 
 ### Refs mode (path given)
 
-Read all files at the given path (or `context/refs/` if the path is a directory). Catalog what you find: PRDs, API docs, design specs, research, architecture docs. Use these as the source of truth for spec generation.
+Read all files at the given path (or `context/refs/` if the path is a directory). Catalog what you find: PRDs, API docs, design blueprints, research, architecture docs. Use these as the source of truth for blueprint generation.
 
 ### Brownfield mode (`--from-code`)
 
@@ -54,9 +54,9 @@ Analyze the input and decompose into logical domains. Each domain should be:
 - **Loosely coupled** — minimal dependencies on other domains
 - **Independently specifiable** — can be described without implementation details of other domains
 
-## Step 4: Generate Specs
+## Step 4: Generate Blueprints
 
-For each domain, create `context/specs/spec-{domain}.md`:
+For each domain, create `context/blueprints/blueprint-{domain}.md`:
 
 ```markdown
 ---
@@ -64,7 +64,7 @@ created: "{CURRENT_DATE_UTC}"
 last_edited: "{CURRENT_DATE_UTC}"
 ---
 
-# Spec: {Domain Name}
+# Blueprint: {Domain Name}
 
 ## Scope
 {What this domain covers}
@@ -76,7 +76,7 @@ last_edited: "{CURRENT_DATE_UTC}"
 **Acceptance Criteria:**
 - [ ] {Testable criterion 1}
 - [ ] {Testable criterion 2}
-**Dependencies:** {Other specs/requirements this depends on, or "none"}
+**Dependencies:** {Other blueprints/requirements this depends on, or "none"}
 
 ### R2: ...
 
@@ -84,18 +84,18 @@ last_edited: "{CURRENT_DATE_UTC}"
 {Explicit exclusions — what this domain does NOT cover}
 
 ## Cross-References
-- See also: spec-{related-domain}.md
+- See also: blueprint-{related-domain}.md
 ```
 
-If `--filter` is set, only generate specs for domains matching the filter pattern.
+If `--filter` is set, only generate blueprints for domains matching the filter pattern.
 
 ### Quality Rules — These Are Non-Negotiable
 
 - Every file MUST have YAML frontmatter with `created` and `last_edited` dates (ISO 8601 UTC)
-- Specs are **implementation-agnostic** — describe WHAT, never HOW
+- Blueprints are **implementation-agnostic** — describe WHAT, never HOW
 - Every requirement MUST have testable acceptance criteria
 - If a requirement cannot be automatically validated, flag it as needing human review
-- Cross-reference specs where domains interact
+- Cross-reference blueprints where domains interact
 - Explicitly state what is out of scope
 - Use R-numbered requirements (R1, R2, R3...)
 
@@ -104,9 +104,9 @@ If `--filter` is set, only generate specs for domains matching the filter patter
 - Describe what the code DOES, not how it's implemented
 - For each acceptance criterion, verify the existing code satisfies it
 - If code does NOT satisfy a criterion, mark it as `[GAP]`
-- Note source files that informed each spec in a Source Traceability section
+- Note source files that informed each blueprint in a Source Traceability section
 
-## Step 5: Create spec-overview.md
+## Step 5: Create blueprint-overview.md
 
 ```markdown
 ---
@@ -114,15 +114,15 @@ created: "{CURRENT_DATE_UTC}"
 last_edited: "{CURRENT_DATE_UTC}"
 ---
 
-# Spec Overview
+# Blueprint Overview
 
 ## Project
 {Project name and description}
 
 ## Domain Index
-| Domain | Spec File | Requirements | Status | Description |
+| Domain | Blueprint File | Requirements | Status | Description |
 |--------|-----------|-------------|--------|-------------|
-| {domain} | spec-{domain}.md | {count} | DRAFT | {one-line} |
+| {domain} | blueprint-{domain}.md | {count} | DRAFT | {one-line} |
 
 ## Cross-Reference Map
 | Domain A | Interacts With | Interaction Type |
@@ -135,16 +135,16 @@ last_edited: "{CURRENT_DATE_UTC}"
 
 ## Step 6: Validate
 
-1. Verify every cross-reference points to an existing spec
-2. Verify no domain is referenced but missing a spec
+1. Verify every cross-reference points to an existing blueprint
+2. Verify no domain is referenced but missing a blueprint
 3. Verify the dependency graph has no circular dependencies
-4. Verify acceptance criteria across specs are consistent (no contradictions)
+4. Verify acceptance criteria across blueprints are consistent (no contradictions)
 5. (Brownfield only) Verify acceptance criteria against existing code
 
 ## Step 7: Report
 
 ```markdown
-## Brainstorm Report
+## Draft Report
 
 ### Domains: {count}
 ### Requirements: {count}
@@ -158,7 +158,7 @@ last_edited: "{CURRENT_DATE_UTC}"
 - {anything that couldn't be fully specified}
 
 ### Next Step
-Run `/sdd:plan` to generate the feature frontier.
+Run `/blueprint:architect` to generate the build site.
 ```
 
 Present the report to the user.

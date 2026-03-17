@@ -1,18 +1,18 @@
 # Prompt Engineering Reference
 
-Best practices for designing prompts that drive BPER phases. Covers runtime inputs, agent team structures, batching, file ownership, exit criteria, completion signals, spawn templates, halting conditions, sub-agent delegation, task templates, and time guards.
+Best practices for designing prompts that drive DABI phases. Covers runtime inputs, agent team structures, batching, file ownership, exit criteria, completion signals, spawn templates, halting conditions, sub-agent delegation, task templates, and time guards.
 
 ---
 
 ## 1. Overview
 
-Prompts in SDD are carefully structured markdown files that instruct AI agents to perform specific phases of BPER. Well-designed prompts are the difference between agents that converge on correct solutions and agents that thrash endlessly.
+Prompts in Blueprint are carefully structured markdown files that instruct AI agents to perform specific phases of DABI. Well-designed prompts are the difference between agents that converge on correct solutions and agents that thrash endlessly.
 
 **Core Principles:**
 - Prompts should be as lightweight and systemic as possible
-- Detailed information belongs in specs, plans, and reference materials -- not in the prompt itself
-- Prompts define the process; specs and plans define the content
-- One prompt per BPER phase
+- Detailed information belongs in blueprints, plans, and reference materials -- not in the prompt itself
+- Prompts define the process; blueprints and plans define the content
+- One prompt per DABI phase
 
 ---
 
@@ -246,17 +246,17 @@ If ANY gate fails:
 Gate order matters: build before test, test before verify.
 ```
 
-### Between BPER Phases
+### Between DABI Phases
 
 ```markdown
-## Transition Gate: Plan -> Implement
+## Transition Gate: Architect -> Build
 
 Before starting implementation, verify:
 
-- [ ] All spec requirements are mapped to plan tasks
+- [ ] All blueprint requirements are mapped to plan tasks
 - [ ] Task dependencies are defined and acyclic
 - [ ] Test strategies defined for each feature
-- [ ] Feature frontier established
+- [ ] Build site established
 - [ ] Framework research complete
 
 Do NOT proceed to implementation until all items are checked.
@@ -284,7 +284,7 @@ You own these files (only modify files you own):
 
 ## Context
 Read these files to understand what to build:
-- `context/specs/spec-{domain}.md` -- WHAT to build
+- `context/blueprints/blueprint-{domain}.md` -- WHAT to build
 - `context/plans/plan-{domain}.md` -- HOW to build it
 - `context/impl/impl-{domain}.md` -- What has been done so far
 
@@ -312,7 +312,7 @@ After each task:
 1. **Self-contained:** The spawn prompt must contain everything the teammate needs
 2. **No assumptions:** Do not assume the teammate knows anything about the project
 3. **Explicit constraints:** File ownership, branch, worktree path must all be stated
-4. **Context references:** Point to spec/plan/impl files, do not copy their content into the prompt
+4. **Context references:** Point to blueprint/plan/impl files, do not copy their content into the prompt
 5. **Validation commands:** Include the exact commands to run
 
 ---
@@ -330,7 +330,7 @@ Halting conditions prevent agents from taking irreversible or destructive action
 - Do NOT delete branches that were not created in this session
 - Do NOT modify files outside your assigned ownership
 - Do NOT install new dependencies without documenting them
-- Do NOT make breaking changes to public APIs without updating specs first
+- Do NOT make breaking changes to public APIs without updating blueprints first
 - If you hit a blocker you cannot resolve in 15 minutes, STOP and document the blocker
 - If you are unsure about an architecture decision, STOP and ask
 ```
@@ -390,21 +390,21 @@ Every task gets a unique ID with the `T-` prefix:
 
 ```markdown
 ### T-1: Set up project scaffolding
-**Spec:** spec-core.md R1
+**Blueprint:** blueprint-core.md R1
 **blockedBy:** None
 **Files:** package.json, tsconfig.json, src/index.ts
 **Effort:** S
 **Description:** Initialize project with build configuration
 
 ### T-2: Implement data models
-**Spec:** spec-data.md R1, R2
+**Blueprint:** blueprint-data.md R1, R2
 **blockedBy:** T-1
 **Files:** src/models/*.ts
 **Effort:** M
 **Description:** Create TypeScript interfaces and validation
 
 ### T-3: Add API layer
-**Spec:** spec-api.md R1
+**Blueprint:** blueprint-api.md R1
 **blockedBy:** T-2
 **Files:** src/api/*.ts
 **Effort:** L
@@ -426,7 +426,7 @@ Tasks marked `[CONDITIONAL]` may be skipped based on runtime conditions:
 
 ```markdown
 ### T-7: Database migration [CONDITIONAL]
-**Condition:** Only if `context/plans/plan-data.md` specifies a database change
+**Condition:** Only if `context/plans/plan-data.md` indicates a database change
 **blockedBy:** T-6
 **Description:** Run migration if schema changed
 ```
@@ -486,7 +486,7 @@ When you hit a time guard:
 
 ### Why Time Guards Matter
 
-Without time guards, agents can spend hours on a single issue that requires human intervention or a spec change. Time guards force the agent to document findings and move on, which:
+Without time guards, agents can spend hours on a single issue that requires human intervention or a blueprint change. Time guards force the agent to document findings and move on, which:
 - Preserves forward progress on other tasks
 - Surfaces blockers early for human review
 - Prevents context window exhaustion on dead ends
@@ -509,7 +509,7 @@ Based on: impl tracking, git log, test results
 - **Category:** feature | bugfix | refactor | test
 - **Size:** S | M | L | XL
 - **Priority:** high | medium | low
-- **Spec reference:** plan-{domain}.md
+- **Blueprint reference:** plan-{domain}.md
 - **What to do:** {Clear description of what needs to happen}
 - **Files to modify:** {List of specific files}
 - **Acceptance criteria:**
@@ -520,7 +520,7 @@ Based on: impl tracking, git log, test results
 - **Category:** bugfix
 - **Size:** S
 - **Priority:** high
-- **Spec reference:** plan-{domain}.md
+- **Blueprint reference:** plan-{domain}.md
 - **What to do:** {Description}
 - **Files to modify:** {List}
 - **Acceptance criteria:**
@@ -598,8 +598,8 @@ When all exit criteria are met:
 
 ### Prompt Too Long
 
-**Problem:** Putting all spec/plan content directly in the prompt.
-**Fix:** Reference spec/plan files. Let agents read them on demand.
+**Problem:** Putting all blueprint/plan content directly in the prompt.
+**Fix:** Reference blueprint/plan files. Let agents read them on demand.
 
 ### No Exit Criteria
 
@@ -657,7 +657,7 @@ Prompts are designed to be run repeatedly by the iteration loop. Each iteration:
 | Artifact | Changes? | How |
 |----------|----------|-----|
 | Prompt | No | Same prompt each iteration |
-| Specs | Rarely | Only via backpropagation |
+| Blueprints | Rarely | Only via revision |
 | Plans | Sometimes | Updated during implementation |
 | Source code | Yes | Implementation progress |
 | Tests | Yes | New tests added |
@@ -672,4 +672,4 @@ Changes should decrease exponentially:
 - Iteration 3: 40 lines changed
 - Iteration 4: ~10 lines (minor adjustments)
 
-If changes are NOT decreasing, the prompt or specs need improvement, not more iterations.
+If changes are NOT decreasing, the prompt or blueprints need improvement, not more iterations.

@@ -1,17 +1,17 @@
 #!/bin/bash
 
-# SDD Execute Setup Script
+# Blueprint Build Setup Script
 # Archives old cycle, reads frontier, starts Ralph Loop.
-# Optionally configures Codex MCP for adversarial review.
+# Optionally configures Codex MCP for peer review.
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 FILTER=""
-ADVERSARIAL=false
+PEER_REVIEW=false
 MAX_ITERATIONS=20
-COMPLETION_PROMISE="SPEC COMPLETE"
+COMPLETION_PROMISE="BLUEPRINT COMPLETE"
 CODEX_MODEL="gpt-5.4"
 REVIEW_INTERVAL=2
 
@@ -19,25 +19,25 @@ while [[ $# -gt 0 ]]; do
   case $1 in
     -h|--help)
       cat << 'HELP_EOF'
-SDD Execute — Run the implementation loop
+Blueprint Build — Run the implementation loop
 
 USAGE:
-  /sdd execute [OPTIONS]
+  /blueprint build [OPTIONS]
 
 OPTIONS:
-  --filter <pattern>             Scope to specs/frontier matching pattern
-  --adversarial                  Add Codex (GPT-5.4) adversarial review
+  --filter <pattern>             Scope to blueprints/build site matching pattern
+  --peer-review                  Add Codex (GPT-5.4) peer review
   --codex-model <model>          Codex model (default: gpt-5.4)
   --review-interval <n>          Review every Nth iteration (default: 2)
   --max-iterations <n>           Max iterations (default: 20)
-  --completion-promise '<text>'  Completion phrase (default: "SPEC COMPLETE")
+  --completion-promise '<text>'  Completion phrase (default: "BLUEPRINT COMPLETE")
   -h, --help                     Show this help
 
 EXAMPLES:
-  /sdd execute
-  /sdd execute --filter v2
-  /sdd execute --adversarial
-  /sdd execute --adversarial --max-iterations 30
+  /blueprint build
+  /blueprint build --filter v2
+  /blueprint build --peer-review
+  /blueprint build --peer-review --max-iterations 30
 HELP_EOF
       exit 0
       ;;
@@ -46,8 +46,8 @@ HELP_EOF
       FILTER="$2"
       shift 2
       ;;
-    --adversarial)
-      ADVERSARIAL=true
+    --peer-review)
+      PEER_REVIEW=true
       shift
       ;;
     --codex-model)
@@ -83,7 +83,7 @@ done
 PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 PROJECT_NAME="$(basename "$PROJECT_ROOT")"
 
-# Detect if we're already in a worktree (sdd --monitor creates these)
+# Detect if we're already in a worktree (blueprint --monitor creates these)
 IS_WORKTREE=false
 GIT_COMMON_DIR="$(git rev-parse --git-common-dir 2>/dev/null || true)"
 GIT_DIR="$(git rev-parse --git-dir 2>/dev/null || true)"
@@ -93,13 +93,13 @@ fi
 
 if [[ "$IS_WORKTREE" == "false" ]]; then
   # Clean any stale ralph-loop state from the main project dir
-  # This prevents the stop hook from hijacking non-SDD conversations
+  # This prevents the stop hook from hijacking non-Blueprint conversations
   rm -f "$PROJECT_ROOT/.claude/ralph-loop.local.md"
 
-  # Derive worktree name from filter or frontier
-  WT_NAME="${FILTER:-execute}"
-  WT_PATH="${PROJECT_ROOT}/../${PROJECT_NAME}-sdd-${WT_NAME}"
-  BRANCH_NAME="sdd/${WT_NAME}"
+  # Derive worktree name from filter or build site
+  WT_NAME="${FILTER:-build}"
+  WT_PATH="${PROJECT_ROOT}/../${PROJECT_NAME}-blueprint-${WT_NAME}"
+  BRANCH_NAME="blueprint/${WT_NAME}"
 
   if [[ -d "$WT_PATH" ]]; then
     echo "📂 Using existing worktree: $WT_PATH"
@@ -117,7 +117,7 @@ if [[ "$IS_WORKTREE" == "false" ]]; then
   # Switch to the worktree
   cd "$WT_PATH"
   echo "📂 Working in: $(pwd)"
-  echo "SDD_WORKTREE_PATH=$WT_PATH"
+  echo "BLUEPRINT_WORKTREE_PATH=$WT_PATH"
 fi
 
 # ─── Find frontier (smart selection) ────────────────────────────────────────
@@ -136,8 +136,8 @@ if [[ -d "context/frontiers" ]]; then
   while IFS= read -r -d '' f; do
     # Skip archive directory
     [[ "$f" == *"/archive/"* ]] && continue
-    # Skip non-frontier files (must have "frontier" in name)
-    [[ "$(basename "$f")" != *frontier* ]] && continue
+    # Skip non-frontier/site files (must have "frontier" or "site" in name)
+    [[ "$(basename "$f")" != *frontier* && "$(basename "$f")" != *site* ]] && continue
     ALL_CANDIDATES+=("$f")
   done < <(find "context/frontiers" -maxdepth 1 -name "*.md" -type f -print0 2>/dev/null | sort -z)
 fi
@@ -161,8 +161,8 @@ else
 fi
 
 if [[ ${#CANDIDATES[@]} -eq 0 ]]; then
-  echo "❌ No feature frontier found in context/frontiers/" >&2
-  echo "   Run /sdd plan first to generate one." >&2
+  echo "❌ No build site found in context/frontiers/" >&2
+  echo "   Run /blueprint:architect first to generate one." >&2
   # Also check context/plans/ as a hint
   if [[ -d "context/plans" ]] && find "context/plans" -name "*frontier*" -type f 2>/dev/null | grep -q .; then
     echo "   (Found frontier files in context/plans/ — move them to context/frontiers/)" >&2
@@ -183,9 +183,9 @@ else
     # Check for active worktree (in-progress = highest priority)
     bn="$(basename "$f" .md)"
     # Derive worktree name the same way the picker does
-    wt_name=$(echo "$bn" | sed -E 's/^(plan-|feature-frontier-|feature-)//' | sed -E 's/-?frontier-?//' | sed -E 's/^-|-$//g')
-    [[ -z "$wt_name" ]] && wt_name="execute"
-    wt_path="${PROJECT_ROOT}/../${PROJECT_NAME}-sdd-${wt_name}"
+    wt_name=$(echo "$bn" | sed -E 's/^(plan-|feature-frontier-|feature-|build-site-)//' | sed -E 's/-?frontier-?//' | sed -E 's/^-|-$//g')
+    [[ -z "$wt_name" ]] && wt_name="build"
+    wt_path="${PROJECT_ROOT}/../${PROJECT_NAME}-blueprint-${wt_name}"
 
     if [[ -d "$wt_path" ]]; then
       if [[ -f "$wt_path/.claude/ralph-loop.local.md" ]]; then
@@ -246,7 +246,7 @@ if [[ -d "context/impl" ]]; then
     ARCHIVE_DIR="context/impl/archive/$(date -u +%Y%m%d-%H%M%S)"
     mkdir -p "$ARCHIVE_DIR"
 
-    for f in context/impl/loop-log.md context/impl/adversarial-findings.md context/adversarial-findings.md; do
+    for f in context/impl/loop-log.md context/impl/peer-review-findings.md context/peer-review-findings.md; do
       [[ -f "$f" ]] && mv "$f" "$ARCHIVE_DIR/" && ARCHIVE_COUNT=$((ARCHIVE_COUNT + 1))
     done
     for f in context/impl/impl-*.md; do
@@ -265,12 +265,12 @@ rm -f .claude/ralph-loop.local.md
 # ─── Discover specs and refs ────────────────────────────────────────────────
 
 SPEC_FILES=()
-if [[ -d "context/specs" ]]; then
+if [[ -d "context/blueprints" ]]; then
   while IFS= read -r -d '' f; do
     [[ "$(basename "$f")" == "CLAUDE.md" ]] && continue
     if [[ -n "$FILTER" ]] && [[ "$f" != *"$FILTER"* ]]; then continue; fi
     SPEC_FILES+=("$f")
-  done < <(find context/specs -name "*.md" -type f -print0 2>/dev/null | sort -z)
+  done < <(find context/blueprints -name "*.md" -type f -print0 2>/dev/null | sort -z)
 fi
 
 SPEC_LISTING=""
@@ -278,9 +278,9 @@ for f in "${SPEC_FILES[@]}"; do
   SPEC_LISTING="${SPEC_LISTING}\n- \`$f\`"
 done
 
-# ─── Configure Codex MCP if adversarial ─────────────────────────────────────
+# ─── Configure Codex MCP if peer review ─────────────────────────────────────
 
-if [[ "$ADVERSARIAL" == "true" ]]; then
+if [[ ""$PEER_REVIEW"" == "true" ]]; then
   MCP_FILE=".mcp.json"
   NEEDS_MCP=false
 
@@ -290,7 +290,7 @@ if [[ "$ADVERSARIAL" == "true" ]]; then
 import json, sys
 with open('$MCP_FILE') as f:
     d = json.load(f)
-sys.exit(0 if 'codex-adversary' in d.get('mcpServers', {}) else 1)
+sys.exit(0 if 'codex-reviewer' in d.get('mcpServers', {}) else 1)
 " 2>/dev/null; then
     NEEDS_MCP=true
   fi
@@ -305,7 +305,7 @@ sys.exit(0 if 'codex-adversary' in d.get('mcpServers', {}) else 1)
 import json
 with open('$MCP_FILE') as f:
     d = json.load(f)
-d.setdefault('mcpServers', {})['codex-adversary'] = {
+d.setdefault('mcpServers', {})['codex-reviewer'] = {
     'command': 'codex',
     'args': ['mcp-server', '-c', 'model=\"$CODEX_MODEL\"']
 }
@@ -315,68 +315,68 @@ with open('$MCP_FILE', 'w') as f:
     else
       python3 -c "
 import json
-d = {'mcpServers': {'codex-adversary': {'command': 'codex', 'args': ['mcp-server', '-c', 'model=\"$CODEX_MODEL\"']}}}
+d = {'mcpServers': {'codex-reviewer': {'command': 'codex', 'args': ['mcp-server', '-c', 'model=\"$CODEX_MODEL\"']}}}
 with open('$MCP_FILE', 'w') as f:
     json.dump(d, f, indent=2)
 "
     fi
-    echo "📡 Configured Codex ($CODEX_MODEL) as MCP adversary"
+    echo "📡 Configured Codex ($CODEX_MODEL) as MCP peer reviewer"
   fi
 fi
 
 # ─── Build prompt ───────────────────────────────────────────────────────────
 
-ADVERSARIAL_SECTION=""
-if [[ "$ADVERSARIAL" == "true" ]]; then
-  ADVERSARIAL_SECTION="
-## Adversarial Review (every ${REVIEW_INTERVAL}th iteration)
+PEER_REVIEW_SECTION=""
+if [[ ""$PEER_REVIEW"" == "true" ]]; then
+  PEER_REVIEW_SECTION="
+## Peer Review (every ${REVIEW_INTERVAL}th iteration)
 
 Check the iteration number from the Ralph system message.
 If iteration % $REVIEW_INTERVAL == 0, this is a REVIEW iteration:
 
 1. Run \`git diff main...HEAD\` to get all changes
-2. Call the \`codex-adversary\` MCP server with this prompt:
+2. Call the \`codex-reviewer\` MCP server with this prompt:
 
-   > You are a senior engineer performing adversarial code review.
+   > You are a senior engineer performing peer review code review.
    > Your job is to find what the builder MISSED — not to agree.
    > SPEC REQUIREMENTS: [include relevant spec content]
    > CODE CHANGES: [include diff]
    > For each issue: Severity (CRITICAL/HIGH/MEDIUM/LOW), File, Issue, Suggestion.
    > If you find zero issues, explain what you checked and why it's correct.
 
-3. Write findings to \`context/impl/adversarial-findings.md\`
+3. Write findings to \`context/impl/peer-review-findings.md\`
 4. Fix all CRITICAL and HIGH findings immediately
 5. Mark fixed findings as FIXED
 
 Completion requires: no CRITICAL/HIGH findings remain unfixed."
 fi
 
-RALPH_PROMPT="# SDD Execute
+RALPH_PROMPT="# Blueprint Build
 
 ## Your Role
-You are implementing tasks from a feature frontier. Each iteration: find the next
-unblocked task, read its spec, implement it, validate, commit.
+You are implementing tasks from a build site. Each iteration: find the next
+unblocked task, read its blueprint, implement it, validate, commit.
 
 ## Read These First (every iteration)
 1. \`context/impl/loop-log.md\` — your iteration history (if exists)
 2. \`$FRONTIER_FILE\` — the task dependency graph
 3. Any \`context/impl/impl-*.md\` files — per-domain progress
 
-## Specs (read when implementing a specific requirement)
+## Blueprints (read when implementing a specific requirement)
 $(echo -e "$SPEC_LISTING")
-$ADVERSARIAL_SECTION
+"$PEER_REVIEW"_SECTION
 ## Each Iteration
 
 ### 1. Orient
 - Read loop-log.md and impl tracking to know what's done
-- Read the frontier to find the lowest tier with incomplete tasks
+- Read the build site to find the lowest tier with incomplete tasks
 
 ### 2. Pick Task
 - Find the next unblocked task (all blockedBy tasks are DONE)
 - Among equals, pick the one that unblocks the most downstream work
 
 ### 3. Implement
-- Read the task's spec requirement and acceptance criteria
+- Read the task's blueprint requirement and acceptance criteria
 - Implement it, following existing codebase patterns
 - One task per iteration
 
@@ -414,7 +414,7 @@ Append to \`context/impl/loop-log.md\` (create if missing):
 \`\`\`
 
 ### 6. Commit
-Descriptive message with task ID and spec requirement. Do NOT push.
+Descriptive message with task ID and blueprint requirement. Do NOT push.
 
 ### 7. Done?
 All tasks across all tiers DONE + build passes + tests pass?
@@ -426,7 +426,7 @@ Otherwise → next iteration.
 1. NEVER output completion promise unless ALL tasks are genuinely DONE
 2. ONE task per iteration
 3. Stuck 2+ iterations → dead end, move on
-4. Re-read frontier and tracking every iteration
+4. Re-read build site and tracking every iteration
 5. Commit after each task"
 
 # ─── Write Ralph Loop state ─────────────────────────────────────────────────
@@ -437,7 +437,7 @@ cat > .claude/ralph-loop.local.md <<EOF
 ---
 active: true
 iteration: 1
-session_id: ${CLAUDE_CODE_SESSION_ID:-$(python3 -c "import uuid; print(uuid.uuid4())" 2>/dev/null || echo "sdd-$$-$(date +%s)")}
+session_id: ${CLAUDE_CODE_SESSION_ID:-$(python3 -c "import uuid; print(uuid.uuid4())" 2>/dev/null || echo "blueprint-$$-$(date +%s)")}
 max_iterations: $MAX_ITERATIONS
 completion_promise: "$COMPLETION_PROMISE"
 started_at: "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
@@ -449,16 +449,16 @@ EOF
 # ─── Output ─────────────────────────────────────────────────────────────────
 
 cat <<EOF
-🔄 SDD Execute — Loop activated!
+🔄 Blueprint Build — Loop activated!
 
 Frontier: $FRONTIER_FILE
 Specs: ${#SPEC_FILES[@]} found
 $(if [[ -n "$FILTER" ]]; then echo "Filter: $FILTER"; fi)
-$(if [[ "$ADVERSARIAL" == "true" ]]; then echo "Adversary: Codex ($CODEX_MODEL) every ${REVIEW_INTERVAL} iterations"; fi)
+$(if [[ ""$PEER_REVIEW"" == "true" ]]; then echo "Peer reviewer: Codex ($CODEX_MODEL) every ${REVIEW_INTERVAL} iterations"; fi)
 $(if [[ $ARCHIVE_COUNT -gt 0 ]]; then echo "Archived: $ARCHIVE_COUNT files from previous cycle"; fi)
 Max iterations: $MAX_ITERATIONS
 
-Each iteration: frontier → spec → implement → validate → commit
+Each iteration: build site → blueprint → implement → validate → commit
 
 ═══════════════════════════════════════════════════════════════════════
 COMPLETION: <promise>$COMPLETION_PROMISE</promise>
