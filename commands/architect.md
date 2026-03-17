@@ -47,9 +47,9 @@ Organize tasks into tiers:
 
 ## Step 5: Write the Site
 
-Create the `context/frontiers/` directory if it doesn't exist.
+Create the `context/sites/` directory if it doesn't exist.
 
-Write `context/frontiers/build-site.md`:
+Write `context/sites/build-site.md`:
 
 ```markdown
 ---

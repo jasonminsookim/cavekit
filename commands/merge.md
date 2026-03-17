@@ -18,7 +18,7 @@ git branch --list 'blueprint/*'
 For each branch, examine:
 1. The commits: `git log --oneline main..<branch>`
 2. The files changed: `git diff --name-only main...<branch>`
-3. The site blueprint it implemented — read `context/frontiers/` and `context/blueprints/` in the worktree or branch
+3. The site blueprint it implemented — read `context/sites/` and `context/blueprints/` in the worktree or branch
 
 Build a mental model of what each branch built and which files overlap.
 
@@ -47,7 +47,7 @@ WT_PATH="${PROJECT_ROOT}/../${PROJECT_NAME}-blueprint-${WT_NAME}"
 
 Read site and impl files from the worktree or from the branch directly:
 ```bash
-git show <branch>:context/frontiers/<site-file>
+git show <branch>:context/sites/<site-file>
 ```
 
 ### 3b. Attempt the merge

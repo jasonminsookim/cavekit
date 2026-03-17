@@ -93,11 +93,11 @@ render() {
 
   # ── Find frontier (prefer active/incomplete over done) ──
   local frontier=""
-  if [[ -d "context/frontiers" ]]; then
+  if [[ -d "context/sites" ]]; then
     # First: look for a frontier with an active worktree
     local project_name
     project_name="$(basename "$root")"
-    for f in $(find "context/frontiers" -maxdepth 1 \( -name "*frontier*.md" -o -name "*site*.md" \) -type f 2>/dev/null | sort); do
+    for f in $(find "context/sites" -maxdepth 1 \( -name "*site*.md" -o -name "*site*.md" \) -type f 2>/dev/null | sort); do
       [[ "$f" == *"/archive/"* ]] && continue
       local bn wt_name wt_path
       bn="$(basename "$f" .md)"
@@ -111,7 +111,7 @@ render() {
     done
     # Fallback: first non-archived frontier
     if [[ -z "$frontier" ]]; then
-      frontier=$(find "context/frontiers" -maxdepth 1 \( -name "*frontier*.md" -o -name "*site*.md" \) -type f 2>/dev/null | grep -v '/archive/' | sort | head -1)
+      frontier=$(find "context/sites" -maxdepth 1 \( -name "*site*.md" -o -name "*site*.md" \) -type f 2>/dev/null | grep -v '/archive/' | sort | head -1)
     fi
   fi
 

@@ -123,7 +123,7 @@ fi
 # ─── Find frontier (smart selection) ────────────────────────────────────────
 #
 # Strategy:
-#   1. Only search context/frontiers/ (not context/plans/ — false positives)
+#   1. Only search context/sites/ (not context/plans/ — false positives)
 #   2. Exclude archive/ subdirectory (completed frontiers)
 #   3. If --filter is set, match filter anywhere in filename
 #   4. Rank candidates: in-progress worktree > has incomplete tasks > rest
@@ -132,14 +132,14 @@ fi
 FRONTIER_FILE=""
 ALL_CANDIDATES=()
 
-if [[ -d "context/frontiers" ]]; then
+if [[ -d "context/sites" ]]; then
   while IFS= read -r -d '' f; do
     # Skip archive directory
     [[ "$f" == *"/archive/"* ]] && continue
-    # Skip non-frontier/site files (must have "frontier" or "site" in name)
-    [[ "$(basename "$f")" != *frontier* && "$(basename "$f")" != *site* ]] && continue
+    # Skip non-frontier/site files (must have "site" or "site" in name)
+    [[ "$(basename "$f")" != *site* && "$(basename "$f")" != *site* ]] && continue
     ALL_CANDIDATES+=("$f")
-  done < <(find "context/frontiers" -maxdepth 1 -name "*.md" -type f -print0 2>/dev/null | sort -z)
+  done < <(find "context/sites" -maxdepth 1 -name "*.md" -type f -print0 2>/dev/null | sort -z)
 fi
 
 # Apply filter if set — match filter anywhere in filename
@@ -161,11 +161,11 @@ else
 fi
 
 if [[ ${#CANDIDATES[@]} -eq 0 ]]; then
-  echo "❌ No build site found in context/frontiers/" >&2
+  echo "❌ No build site found in context/sites/" >&2
   echo "   Run /bp:architect first to generate one." >&2
   # Also check context/plans/ as a hint
-  if [[ -d "context/plans" ]] && find "context/plans" -name "*frontier*" -type f 2>/dev/null | grep -q .; then
-    echo "   (Found frontier files in context/plans/ — move them to context/frontiers/)" >&2
+  if [[ -d "context/plans" ]] && find "context/plans" -name "*site*" -type f 2>/dev/null | grep -q .; then
+    echo "   (Found frontier files in context/plans/ — move them to context/sites/)" >&2
   fi
   exit 1
 fi

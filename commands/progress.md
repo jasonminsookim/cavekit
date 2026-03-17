@@ -10,7 +10,7 @@ Show the user a progress report by comparing the build site against implementati
 
 ## Step 1: Find Site
 
-Look in `context/frontiers/` then `context/plans/` for `*site*` or `*frontier*` files. If `--filter` is set (parse from `$ARGUMENTS`), match against it.
+Look in `context/sites/` then `context/plans/` for `*site*` or `*frontier*` files. If `--filter` is set (parse from `$ARGUMENTS`), match against it.
 
 If no site found: "No site found. Run `/bp:architect` first."
 

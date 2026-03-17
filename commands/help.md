@@ -34,7 +34,7 @@ Decomposes your project into domains, writes `context/blueprints/blueprint-{doma
 /bp:architect --filter v2        # only v2 blueprints
 ```
 
-Reads blueprints, decomposes requirements into tasks, organizes into dependency tiers. Writes `context/frontiers/build-site.md`. No domain plans — just tasks and dependencies.
+Reads blueprints, decomposes requirements into tasks, organizes into dependency tiers. Writes `context/sites/build-site.md`. No domain plans — just tasks and dependencies.
 
 ### `/bp:build` — Run the Loop
 

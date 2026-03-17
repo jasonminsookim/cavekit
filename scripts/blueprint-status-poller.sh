@@ -26,7 +26,7 @@ count_frontier_progress() {
 
   # Find frontier file in worktree
   local frontier=""
-  for f in "$worktree"/context/frontiers/*frontier*.md; do
+  for f in "$worktree"/context/sites/*site*.md; do
     [[ -f "$f" ]] && frontier="$f" && break
   done
   [[ -z "$frontier" ]] && echo "?/?" && return

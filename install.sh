@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# SDD Installer
+# Blueprint Installer
 #
 # Usage:
 #   git clone https://github.com/JuliusBrussee/sdd-os.git ~/.blueprint && ~/.blueprint/install.sh
@@ -11,7 +11,8 @@ INSTALL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CLAUDE_DIR="$HOME/.claude"
 SETTINGS_FILE="$CLAUDE_DIR/settings.json"
 BIN_DIR="/usr/local/bin"
-MARKETPLACE_NAME="blueprint"
+MARKETPLACE_NAME="blueprint-local"
+MARKETPLACE_DIR="$CLAUDE_DIR/plugins/local/blueprint-marketplace"
 
 # ─── Colors ─────────────────────────────────────────────────────────────────
 
@@ -35,21 +36,59 @@ command -v git &>/dev/null || fail "git not found."
 command -v claude &>/dev/null || warn "claude CLI not found. Install Claude Code to use /bp:... commands."
 command -v tmux &>/dev/null || warn "tmux not found. Install for the parallel launcher: brew install tmux"
 
+# ─── Create marketplace with symlink to repo ─────────────────────────────
+
+info "Setting up Blueprint marketplace..."
+
+mkdir -p "$MARKETPLACE_DIR/.claude-plugin"
+
+# Symlink the repo as the "bp" plugin inside the marketplace
+ln -sfn "$INSTALL_DIR" "$MARKETPLACE_DIR/bp"
+
+# Write marketplace metadata
+cat > "$MARKETPLACE_DIR/.claude-plugin/marketplace.json" <<EOF
+{
+  "name": "$MARKETPLACE_NAME",
+  "owner": { "name": "$(whoami)" },
+  "metadata": {
+    "description": "Local Blueprint plugin marketplace",
+    "version": "2.0.0"
+  },
+  "plugins": [
+    {
+      "name": "bp",
+      "description": "Blueprint framework with skills, commands, agents, and references",
+      "version": "2.0.0",
+      "source": "./bp",
+      "author": { "name": "$(whoami)" }
+    }
+  ]
+}
+EOF
+
+cat > "$MARKETPLACE_DIR/.claude-plugin/plugin.json" <<EOF
+{
+  "name": "blueprint-marketplace",
+  "description": "Local Blueprint plugin marketplace",
+  "version": "2.0.0",
+  "plugins": ["bp"]
+}
+EOF
+
+ok "Marketplace created at $MARKETPLACE_DIR"
+
 # ─── Register Claude Code plugin ───────────────────────────────────────────
 
-info "Configuring Claude Code plugin..."
+info "Configuring Claude Code settings..."
 
 mkdir -p "$CLAUDE_DIR"
-
-# install.sh lives at the repo root alongside plugin.json.
-MARKETPLACE_PATH="$INSTALL_DIR"
 
 if [[ ! -f "$SETTINGS_FILE" ]]; then
   cat > "$SETTINGS_FILE" <<EOF
 {
   "extraKnownMarketplaces": {
     "${MARKETPLACE_NAME}": {
-      "source": { "source": "directory", "path": "${MARKETPLACE_PATH}" }
+      "source": { "source": "directory", "path": "${MARKETPLACE_DIR}" }
     }
   },
   "enabledPlugins": {
@@ -59,11 +98,11 @@ if [[ ! -f "$SETTINGS_FILE" ]]; then
 EOF
   ok "Created $SETTINGS_FILE"
 else
-  if grep -q "$MARKETPLACE_NAME" "$SETTINGS_FILE" 2>/dev/null; then
+  if grep -q "bp@${MARKETPLACE_NAME}" "$SETTINGS_FILE" 2>/dev/null; then
     ok "Plugin already registered"
   else
     if command -v python3 &>/dev/null; then
-      python3 - "$SETTINGS_FILE" "$MARKETPLACE_NAME" "$MARKETPLACE_PATH" <<'PYEOF'
+      python3 - "$SETTINGS_FILE" "$MARKETPLACE_NAME" "$MARKETPLACE_DIR" <<'PYEOF'
 import json, sys
 path, name, mpath = sys.argv[1], sys.argv[2], sys.argv[3]
 with open(path) as f:
@@ -77,7 +116,7 @@ PYEOF
     else
       warn "Could not auto-update settings. Add manually to $SETTINGS_FILE:"
       printf "\n"
-      printf '  "extraKnownMarketplaces": { "%s": { "source": { "source": "directory", "path": "%s" } } }\n' "$MARKETPLACE_NAME" "$MARKETPLACE_PATH"
+      printf '  "extraKnownMarketplaces": { "%s": { "source": { "source": "directory", "path": "%s" } } }\n' "$MARKETPLACE_NAME" "$MARKETPLACE_DIR"
       printf '  "enabledPlugins": { "bp@%s": true }\n\n' "$MARKETPLACE_NAME"
     fi
   fi

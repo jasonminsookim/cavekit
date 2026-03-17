@@ -15,7 +15,7 @@ Run this after `/bp:build` completes (or is stopped). It does two things:
 
 Read these files to understand what happened:
 
-1. **Site** — find in `context/frontiers/` or `context/plans/` (apply `--filter` from `$ARGUMENTS` if set)
+1. **Site** — find in `context/sites/` or `context/plans/` (apply `--filter` from `$ARGUMENTS` if set)
 2. **Blueprints** — all `context/blueprints/blueprint-*.md` files (apply filter)
 3. **Impl tracking** — all `context/impl/impl-*.md` files
 4. **Loop log** — `context/impl/loop-log.md`
@@ -188,7 +188,7 @@ When modifying a blueprint file:
 
 If new requirements were added to blueprints, add corresponding tasks to the site:
 
-1. Read `context/frontiers/build-site.md`
+1. Read `context/sites/build-site.md`
 2. For each new requirement, create task(s) with T-numbers continuing from the last existing task
 3. Place tasks in the appropriate tier based on dependencies
 4. Update the `last_edited` date in frontmatter
