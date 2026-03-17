@@ -120,30 +120,114 @@ if [[ "$IS_WORKTREE" == "false" ]]; then
   echo "SDD_WORKTREE_PATH=$WT_PATH"
 fi
 
-# ─── Find frontier ──────────────────────────────────────────────────────────
+# ─── Find frontier (smart selection) ────────────────────────────────────────
+#
+# Strategy:
+#   1. Only search context/frontiers/ (not context/plans/ — false positives)
+#   2. Exclude archive/ subdirectory (completed frontiers)
+#   3. If --filter is set, match filter anywhere in filename
+#   4. Rank candidates: in-progress worktree > has incomplete tasks > rest
+#   5. If multiple ambiguous candidates, list them for visibility
 
 FRONTIER_FILE=""
-SEARCH_DIRS=()
-[[ -d "context/frontiers" ]] && SEARCH_DIRS+=("context/frontiers")
-[[ -d "context/plans" ]] && SEARCH_DIRS+=("context/plans")
+ALL_CANDIDATES=()
 
-for sdir in "${SEARCH_DIRS[@]+"${SEARCH_DIRS[@]}"}"; do
-  if [[ -n "$FILTER" ]]; then
-    while IFS= read -r -d '' f; do
-      [[ -z "$FRONTIER_FILE" ]] && FRONTIER_FILE="$f"
-    done < <(find "$sdir" -name "*${FILTER}*frontier*" -type f -print0 2>/dev/null | sort -z)
-  fi
-  if [[ -z "$FRONTIER_FILE" ]]; then
-    while IFS= read -r -d '' f; do
-      [[ -z "$FRONTIER_FILE" ]] && FRONTIER_FILE="$f"
-    done < <(find "$sdir" -name "*frontier*" -type f -print0 2>/dev/null | sort -z)
-  fi
-done
+if [[ -d "context/frontiers" ]]; then
+  while IFS= read -r -d '' f; do
+    # Skip archive directory
+    [[ "$f" == *"/archive/"* ]] && continue
+    # Skip non-frontier files (must have "frontier" in name)
+    [[ "$(basename "$f")" != *frontier* ]] && continue
+    ALL_CANDIDATES+=("$f")
+  done < <(find "context/frontiers" -maxdepth 1 -name "*.md" -type f -print0 2>/dev/null | sort -z)
+fi
 
-if [[ -z "$FRONTIER_FILE" ]]; then
-  echo "❌ No feature frontier found." >&2
+# Apply filter if set — match filter anywhere in filename
+CANDIDATES=()
+if [[ -n "$FILTER" ]]; then
+  for f in "${ALL_CANDIDATES[@]}"; do
+    bn="$(basename "$f")"
+    if [[ "$bn" == *"$FILTER"* ]]; then
+      CANDIDATES+=("$f")
+    fi
+  done
+  # If filter matched nothing, fall back to all candidates
+  if [[ ${#CANDIDATES[@]} -eq 0 ]]; then
+    echo "⚠️  Filter '$FILTER' matched no frontiers, searching all" >&2
+    CANDIDATES=("${ALL_CANDIDATES[@]}")
+  fi
+else
+  CANDIDATES=("${ALL_CANDIDATES[@]}")
+fi
+
+if [[ ${#CANDIDATES[@]} -eq 0 ]]; then
+  echo "❌ No feature frontier found in context/frontiers/" >&2
   echo "   Run /sdd plan first to generate one." >&2
+  # Also check context/plans/ as a hint
+  if [[ -d "context/plans" ]] && find "context/plans" -name "*frontier*" -type f 2>/dev/null | grep -q .; then
+    echo "   (Found frontier files in context/plans/ — move them to context/frontiers/)" >&2
+  fi
   exit 1
+fi
+
+# If exactly one candidate, use it directly
+if [[ ${#CANDIDATES[@]} -eq 1 ]]; then
+  FRONTIER_FILE="${CANDIDATES[0]}"
+else
+  # Multiple candidates — rank by status
+  # Priority: has active worktree > has incomplete tasks > alphabetical
+  BEST_SCORE=0
+  for f in "${CANDIDATES[@]}"; do
+    score=1  # base score
+
+    # Check for active worktree (in-progress = highest priority)
+    bn="$(basename "$f" .md)"
+    # Derive worktree name the same way the picker does
+    wt_name=$(echo "$bn" | sed -E 's/^(plan-|feature-frontier-|feature-)//' | sed -E 's/-?frontier-?//' | sed -E 's/^-|-$//g')
+    [[ -z "$wt_name" ]] && wt_name="execute"
+    wt_path="${PROJECT_ROOT}/../${PROJECT_NAME}-sdd-${wt_name}"
+
+    if [[ -d "$wt_path" ]]; then
+      if [[ -f "$wt_path/.claude/ralph-loop.local.md" ]]; then
+        score=3  # active worktree with ralph loop
+      else
+        score=2  # worktree exists (maybe stale, but likely relevant)
+      fi
+    fi
+
+    # Check if frontier has incomplete tasks (prefer non-done frontiers)
+    if [[ $score -lt 2 ]]; then
+      task_count=$(grep -cE '\|\s*T-([A-Za-z0-9]+-)*[0-9]+\s*\|' "$f" 2>/dev/null || echo 0)
+      if [[ $task_count -gt 0 ]]; then
+        # Check if all tasks are done
+        done_count=0
+        if [[ -d "context/impl" ]]; then
+          for task_id in $(grep -oE 'T-([A-Za-z0-9]+-)*[0-9]+' "$f" 2>/dev/null | sort -u); do
+            if grep -rlq "$task_id.*DONE\|DONE.*$task_id" context/impl/ 2>/dev/null; then
+              done_count=$((done_count + 1))
+            fi
+          done
+        fi
+        if [[ $done_count -lt $task_count ]]; then
+          score=2  # has incomplete tasks
+        fi
+      fi
+    fi
+
+    if [[ $score -gt $BEST_SCORE ]]; then
+      BEST_SCORE=$score
+      FRONTIER_FILE="$f"
+    fi
+  done
+
+  # List all candidates so Claude has visibility
+  echo "📋 Found ${#CANDIDATES[@]} frontiers:" >&2
+  for f in "${CANDIDATES[@]}"; do
+    marker="  "
+    [[ "$f" == "$FRONTIER_FILE" ]] && marker="→ "
+    task_count=$(grep -cE '\|\s*T-([A-Za-z0-9]+-)*[0-9]+\s*\|' "$f" 2>/dev/null || echo "?")
+    echo "  ${marker}$(basename "$f") (${task_count} tasks)" >&2
+  done
 fi
 
 echo "📋 Frontier: $FRONTIER_FILE"

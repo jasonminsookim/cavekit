@@ -39,8 +39,8 @@ info "Configuring Claude Code plugin..."
 
 mkdir -p "$CLAUDE_DIR"
 
-# The marketplace path is the parent of the install dir (plugin.json is at repo root)
-MARKETPLACE_PATH="$(dirname "$INSTALL_DIR")"
+# install.sh lives at the repo root alongside plugin.json.
+MARKETPLACE_PATH="$INSTALL_DIR"
 
 if [[ ! -f "$SETTINGS_FILE" ]]; then
   cat > "$SETTINGS_FILE" <<EOF

@@ -11,7 +11,32 @@
 
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}" 2>/dev/null || readlink "${BASH_SOURCE[0]}")")" && pwd)"
+TASK_ID_PATTERN='T-([A-Za-z0-9]+-)*[A-Za-z0-9]+'
+
+resolve_script_dir() {
+  local source="${BASH_SOURCE[0]}"
+
+  while [[ -L "$source" ]]; do
+    local dir
+    dir="$(cd -P "$(dirname "$source")" && pwd)"
+    source="$(readlink "$source")"
+    [[ "$source" != /* ]] && source="${dir}/${source}"
+  done
+
+  cd -P "$(dirname "$source")" && pwd
+}
+
+count_frontier_tasks() {
+  local frontier="$1"
+
+  grep -E "^[[:space:]]*\\|[[:space:]]*${TASK_ID_PATTERN}[[:space:]]*\\||^[[:space:]]*-[[:space:]]+${TASK_ID_PATTERN}([[:space:]]|$)" "$frontier" 2>/dev/null \
+    | grep -oE "$TASK_ID_PATTERN" \
+    | sort -u \
+    | wc -l \
+    | tr -d ' '
+}
+
+SCRIPT_DIR="$(resolve_script_dir)"
 
 usage() {
   cat <<'EOF'
@@ -62,17 +87,17 @@ do_status() {
 
     local total=0 done_count=0
     if [[ -n "$frontier" ]]; then
-      total=$(grep -cE '^\s*\|\s*T-[0-9]+' "$frontier" 2>/dev/null || echo 0)
+      total=$(count_frontier_tasks "$frontier")
     fi
 
     # Count done from impl
     local done_ids=""
     for impl in "$wt"/context/impl/impl-*.md; do
       [[ -f "$impl" ]] || continue
-      done_ids+=$(grep -iE 'T-[0-9]+.*DONE' "$impl" 2>/dev/null | grep -oE 'T-[0-9]+' || true)
+      done_ids+=$(grep -iE 'DONE' "$impl" 2>/dev/null | grep -oE "$TASK_ID_PATTERN" || true)
       done_ids+=$'\n'
     done
-    done_count=$(echo "$done_ids" | sort -u | grep -c 'T-' 2>/dev/null || echo 0)
+    done_count=$(echo "$done_ids" | sort -u | grep -c 'T-' 2>/dev/null || true)
 
     # Check loop state
     local status_icon="·"

@@ -7,6 +7,7 @@ set -uo pipefail
 
 SESSION_NAME="sdd"
 POLL_INTERVAL=5
+TASK_ID_PATTERN='T-([A-Za-z0-9]+-)*[A-Za-z0-9]+'
 
 PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 PROJECT_NAME="$(basename "$PROJECT_ROOT")"
@@ -31,16 +32,22 @@ count_frontier_progress() {
   [[ -z "$frontier" ]] && echo "?/?" && return
 
   # Count total tasks
-  total=$(grep -cE '^\s*\|\s*T-[0-9]+' "$frontier" 2>/dev/null || echo 0)
+  total=$(
+    grep -E "^[[:space:]]*\\|[[:space:]]*${TASK_ID_PATTERN}[[:space:]]*\\||^[[:space:]]*-[[:space:]]+${TASK_ID_PATTERN}([[:space:]]|$)" "$frontier" 2>/dev/null \
+      | grep -oE "$TASK_ID_PATTERN" \
+      | sort -u \
+      | wc -l \
+      | tr -d ' '
+  )
 
   # Count done tasks from impl files
   local done_ids=""
   for impl in "$worktree"/context/impl/impl-*.md; do
     [[ -f "$impl" ]] || continue
-    done_ids+=$(grep -iE 'T-[0-9]+.*DONE' "$impl" 2>/dev/null | grep -oE 'T-[0-9]+' || true)
+    done_ids+=$(grep -iE 'DONE' "$impl" 2>/dev/null | grep -oE "$TASK_ID_PATTERN" || true)
     done_ids+=$'\n'
   done
-  done=$(echo "$done_ids" | sort -u | grep -c 'T-' 2>/dev/null || echo 0)
+  done=$(echo "$done_ids" | sort -u | grep -c 'T-' 2>/dev/null || true)
 
   echo "${done}/${total}"
 }

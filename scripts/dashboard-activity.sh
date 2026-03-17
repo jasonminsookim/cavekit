@@ -14,6 +14,7 @@ YL=$'\033[33m'
 RD=$'\033[31m'
 CY=$'\033[36m'
 EL=$'\033[K'
+TASK_ID_PATTERN='T-([A-Za-z0-9]+-)*[A-Za-z0-9]+'
 
 tput civis 2>/dev/null
 trap 'tput cnorm 2>/dev/null' EXIT
@@ -111,7 +112,7 @@ render() {
   local current_task=""
   for impl_file in context/impl/impl-*.md; do
     [[ -f "$impl_file" ]] || continue
-    local wip=$(grep -iE 'IN.PROGRESS|PARTIAL' "$impl_file" 2>/dev/null | grep -oE 'T-[0-9]+' | tail -1)
+    local wip=$(grep -iE 'IN.PROGRESS|PARTIAL' "$impl_file" 2>/dev/null | grep -oE "$TASK_ID_PATTERN" | tail -1)
     [[ -n "$wip" ]] && current_task="$wip"
   done
 

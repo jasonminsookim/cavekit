@@ -11,6 +11,8 @@
 
 set -uo pipefail
 
+TASK_ID_PATTERN='T-([A-Za-z0-9]+-)*[A-Za-z0-9]+'
+
 R=$'\033[0m'
 B=$'\033[1m'
 D=$'\033[2m'
@@ -145,8 +147,8 @@ if [[ $total_dead_ends -gt 0 ]]; then
     [[ -d "$impl_dir" ]] || continue
     for impl in "$impl_dir"/impl-*.md; do
       [[ -f "$impl" ]] || continue
-      grep -iB1 'dead.end' "$impl" 2>/dev/null | grep -E 'T-[0-9]+' | head -5 | while read -r dline; do
-        task_id=$(echo "$dline" | grep -oE 'T-[0-9]+' | head -1)
+      grep -iB1 'dead.end' "$impl" 2>/dev/null | grep -E "$TASK_ID_PATTERN" | head -5 | while read -r dline; do
+        task_id=$(echo "$dline" | grep -oE "$TASK_ID_PATTERN" | head -1)
         desc=$(echo "$dline" | sed "s/.*$task_id[[:space:]]*//" | cut -c1-50)
         [[ -n "$task_id" ]] && echo "    ${RD}✕${R} ${task_id} ${D}${desc}${R}"
       done

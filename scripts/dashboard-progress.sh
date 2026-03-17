@@ -17,6 +17,33 @@ BGG=$'\033[42m'
 BGY=$'\033[43m'
 BGD=$'\033[100m'
 EL=$'\033[K'
+TASK_ID_PATTERN='T-([A-Za-z0-9]+-)*[A-Za-z0-9]+'
+
+extract_task_id() {
+  printf '%s\n' "$1" | grep -oE "$TASK_ID_PATTERN" | head -1
+}
+
+is_frontier_task_line() {
+  local line="$1"
+  printf '%s\n' "$line" | grep -Eq "^[[:space:]]*\\|[[:space:]]*${TASK_ID_PATTERN}[[:space:]]*\\||^[[:space:]]*-[[:space:]]+${TASK_ID_PATTERN}([[:space:]]|$)"
+}
+
+record_task_status() {
+  TASK_STATUS_LINES+="$1"$'\t'"$2"$'\n'
+}
+
+lookup_task_status() {
+  local task_id="$1"
+  local line=""
+  local task_status=""
+  local result=""
+
+  while IFS=$'\t' read -r line task_status; do
+    [[ "$line" == "$task_id" ]] && result="$task_status"
+  done <<< "${TASK_STATUS_LINES:-}"
+
+  printf '%s' "$result"
+}
 
 tput civis 2>/dev/null
 trap 'tput cnorm 2>/dev/null' EXIT
@@ -64,13 +91,29 @@ render() {
   fi
   emit ""
 
-  # ── Find frontier ──
+  # ── Find frontier (prefer active/incomplete over done) ──
   local frontier=""
-  for dir in context/frontiers context/plans; do
-    [[ -d "$dir" ]] || continue
-    frontier=$(find "$dir" -name "*frontier*" -type f 2>/dev/null | sort | head -1)
-    [[ -n "$frontier" ]] && break
-  done
+  if [[ -d "context/frontiers" ]]; then
+    # First: look for a frontier with an active worktree
+    local project_name
+    project_name="$(basename "$root")"
+    for f in $(find "context/frontiers" -maxdepth 1 -name "*frontier*.md" -type f 2>/dev/null | sort); do
+      [[ "$f" == *"/archive/"* ]] && continue
+      local bn wt_name wt_path
+      bn="$(basename "$f" .md)"
+      wt_name=$(echo "$bn" | sed -E 's/^(plan-|feature-frontier-|feature-)//' | sed -E 's/-?frontier-?//' | sed -E 's/^-|-$//g')
+      [[ -z "$wt_name" ]] && wt_name="execute"
+      wt_path="${root}/../${project_name}-sdd-${wt_name}"
+      if [[ -d "$wt_path" && -f "$wt_path/.claude/ralph-loop.local.md" ]]; then
+        frontier="$f"
+        break
+      fi
+    done
+    # Fallback: first non-archived frontier
+    if [[ -z "$frontier" ]]; then
+      frontier=$(find "context/frontiers" -maxdepth 1 -name "*frontier*.md" -type f 2>/dev/null | grep -v '/archive/' | sort | head -1)
+    fi
+  fi
 
   if [[ -z "$frontier" ]]; then
     emit "  ${D}No frontier found${R}"
@@ -83,32 +126,33 @@ render() {
   # ── Parse tasks ──
   local total=0 done_count=0 in_progress=0 blocked=0
   local task_ids=()
+  local TASK_STATUS_LINES=""
 
   while IFS= read -r tline; do
-    local tid
-    tid=$(echo "$tline" | grep -oE 'T-[0-9]+' | head -1)
+    local tid=""
+    is_frontier_task_line "$tline" || continue
+    tid=$(extract_task_id "$tline")
     [[ -n "$tid" ]] && task_ids+=("$tid") && total=$((total + 1))
-  done < <(grep -E '^\s*-\s+T-[0-9]+' "$frontier" 2>/dev/null || true)
+  done < "$frontier"
 
-  declare -A task_status=()
   for impl_file in context/impl/impl-*.md; do
     [[ -f "$impl_file" ]] || continue
     while IFS= read -r tline; do
-      local tid
-      tid=$(echo "$tline" | grep -oE 'T-[0-9]+' | head -1)
+      local tid=""
+      tid=$(extract_task_id "$tline")
       [[ -z "$tid" ]] && continue
       if echo "$tline" | grep -qi 'DONE'; then
-        task_status["$tid"]="DONE"
+        record_task_status "$tid" "DONE"
       elif echo "$tline" | grep -qi 'IN.PROGRESS\|PARTIAL'; then
-        task_status["$tid"]="WIP"
+        record_task_status "$tid" "WIP"
       elif echo "$tline" | grep -qi 'BLOCKED\|DEAD.END'; then
-        task_status["$tid"]="BLOCKED"
+        record_task_status "$tid" "BLOCKED"
       fi
-    done < <(grep -E 'T-[0-9]+' "$impl_file" 2>/dev/null || true)
+    done < <(grep -E "$TASK_ID_PATTERN" "$impl_file" 2>/dev/null || true)
   done
 
   for tid in "${task_ids[@]+"${task_ids[@]}"}"; do
-    case "${task_status[$tid]:-}" in
+    case "$(lookup_task_status "$tid")" in
       DONE)    done_count=$((done_count + 1)) ;;
       WIP)     in_progress=$((in_progress + 1)) ;;
       BLOCKED) blocked=$((blocked + 1)) ;;
@@ -160,11 +204,11 @@ render() {
       fi
       cur_tier=$(echo "$tline" | sed 's/^##[[:space:]]*//' | head -c $((cols - 14)))
       tier_total=0; tier_done=0
-    elif [[ "$tline" =~ ^[[:space:]]*-[[:space:]]+T-[0-9]+ ]]; then
-      local tid
-      tid=$(echo "$tline" | grep -oE 'T-[0-9]+' | head -1)
+    elif is_frontier_task_line "$tline"; then
+      local tid=""
+      tid=$(extract_task_id "$tline")
       tier_total=$((tier_total + 1))
-      [[ "${task_status[$tid]:-}" == "DONE" ]] && tier_done=$((tier_done + 1))
+      [[ "$(lookup_task_status "$tid")" == "DONE" ]] && tier_done=$((tier_done + 1))
     fi
   done < "$frontier"
 
@@ -180,15 +224,15 @@ render() {
   local dead_ends=0
   for impl_file in context/impl/impl-*.md; do
     [[ -f "$impl_file" ]] || continue
-    dead_ends=$((dead_ends + $(grep -ciE 'dead.end' "$impl_file" 2>/dev/null || echo 0)))
+    dead_ends=$((dead_ends + $(grep -ciE 'dead.end' "$impl_file" 2>/dev/null || true)))
   done
   [[ $dead_ends -gt 0 ]] && emit "  ${RD}Dead ends: ${dead_ends}${R}" && emit ""
 
   # ── Adversarial ──
   local findings_file="context/impl/adversarial-findings.md"
   if [[ -f "$findings_file" ]]; then
-    local critical=$(grep -ciE 'CRITICAL' "$findings_file" 2>/dev/null || echo 0)
-    local high=$(grep -ciE '\bHIGH\b' "$findings_file" 2>/dev/null || echo 0)
+    local critical=$(grep -ciE 'CRITICAL' "$findings_file" 2>/dev/null || true)
+    local high=$(grep -ciE '\bHIGH\b' "$findings_file" 2>/dev/null || true)
     emit "${B} Adversarial${R}"
     emit "${D}${hr}${R}"
     [[ $critical -gt 0 ]] && emit "  ${RD}CRITICAL${R} ${critical}"
