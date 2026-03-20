@@ -40,13 +40,32 @@ For each commit classified as a manual fix, determine:
    - **Prompt gap**: the plan existed but the prompt didn't guide the agent to it
    - **Validation gap**: everything existed but no test caught the regression
 
-## Step 3: Discover Governing Plan Files
+## Step 3: Map Changes to Blueprint Requirements
+
+For each manual fix, identify which blueprint requirements are affected:
+
+1. **Read all blueprints** in `context/blueprints/` to build a requirement index (blueprint file → R-numbers → descriptions)
+2. **Read the build site** in `context/sites/` to map tasks → requirements → blueprints
+3. **Match changed files** to tasks in the build site (check task titles, impl tracking files, and git blame for task-ID references in commit messages)
+4. **Identify affected requirements** by tracing: changed file → task → requirement → blueprint
+
+For each affected requirement, record:
+| Blueprint | Requirement | Current Description | What Changed | Needs Update? |
+
+**Unaffected requirements remain untouched.** Only modify requirements where the code change reveals a gap, ambiguity, or behavioral shift.
+
+**Cross-blueprint moves:** If a fix reveals that a requirement belongs in a different domain:
+1. Move the requirement to the correct blueprint (assign the next available R-number)
+2. Add a cross-reference in the original blueprint: "R{n} moved to blueprint-{domain}.md R{m}"
+3. Update both blueprints' `## Cross-References` sections
+
+## Step 3b: Discover Governing Plan Files
 
 For each changed source file, determine which plan file governs it:
 - Search `context/plans/` for plan files that reference the changed paths
 - If no plan covers the file, flag it as an **untracked file** (potential blueprint gap)
 
-## Step 4: Update Context Files
+## Step 4: Update Blueprints and Context Files
 
 For each manual fix, update the appropriate context files:
 

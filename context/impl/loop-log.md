@@ -21,4 +21,12 @@
 - **Status:** DONE
 - **Files:** commands/draft.md, commands/revise.md
 - **Validation:** Build P, Acceptance: template has ## Changelog P, revise appends entries P, since-last-revision from changelog P, append-only P
-- **Next:** T-009 — Scan commits since last revision
+- **Next:** T-009, T-010
+
+### Iteration 4 — 2026-03-20
+- **Task:** T-009 (scan commits + map to requirements), T-010 (update blueprint requirements)
+- **Tier:** 1
+- **Status:** DONE
+- **Files:** commands/revise.md
+- **Validation:** Build P, Acceptance: requirement mapping via build site tracing P, unaffected reqs untouched P, cross-blueprint moves P, since-last-revision from changelog P
+- **Next:** T-011 — Present recovery options on build failure
