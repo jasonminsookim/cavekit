@@ -150,8 +150,8 @@ bp_findings_list_blocking() {
   [[ ! -f "$fpath" ]] && return 0
 
   grep -E '^\|' "$fpath" \
-    | grep -v '^\| Finding' \
-    | grep -v '^\|[-]' \
+    | grep -vF '| Finding' \
+    | grep -vE '^\|[-]' \
     | while IFS='|' read -r _ finding severity file status rest; do
         severity="$(echo "$severity" | xargs)"
         status="$(echo "$status" | xargs)"

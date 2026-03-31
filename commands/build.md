@@ -108,11 +108,27 @@ Once the setup script completes (outputs the ralph prompt), you run the executio
       ```
       scripts/codex-review.sh --base $TIER_START_REF
       ```
-      Report the review results in the wave output. If findings are returned, include them in the wave summary but **do not block** — the tier gate mode (severity/strict/permissive) is enforced by the review script itself.
+
+   d. **Severity-based gating** — after the review, source `scripts/codex-gate.sh` and run `bp_tier_gate`:
+      - If `GATE_RESULT=proceed`: log the tier review summary and advance.
+      - If `GATE_RESULT=blocked`: the tier has P0/P1 findings (or all findings in `strict` mode) that must be fixed before advancing.
+
+   e. **When blocked** — generate fix tasks and execute them as an additional wave within the current tier:
+      1. Run `bp_generate_fix_tasks` to get the list of blocking findings
+      2. For each blocking finding, create a fix task: read the finding's file and description, implement the fix
+      3. After all fix tasks complete, commit the fixes
+      4. Mark fixed findings with `bp_findings_update_status <F-ID> FIXED`
+      5. **Re-run the Codex review** on the updated diff: `scripts/codex-review.sh --base $TIER_START_REF`
+      6. Re-evaluate with `bp_tier_gate`
+      7. **Maximum 2 review-fix cycles per tier** — after 2 cycles, log any remaining P0/P1 findings as warnings and advance:
+         ```
+         [bp:tier-gate] WARNING: Advancing after 2 review-fix cycles with {N} unresolved P0/P1 findings
+         ```
 
    ```
    ═══ Tier {N} Complete — Codex Review ═══
-   Review: {CLEAN | N findings}
+   Review: {CLEAN | N findings (M blocking, K deferred)}
+   Gate: {PROCEED | BLOCKED → fix cycle {1|2}}
    ```
 
 7. **Immediately proceed to next wave** — do NOT wait for user input between waves.
