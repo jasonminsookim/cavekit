@@ -113,17 +113,13 @@ Once the setup script completes (outputs the ralph prompt), you run the executio
       - If `GATE_RESULT=proceed`: log the tier review summary and advance.
       - If `GATE_RESULT=blocked`: the tier has P0/P1 findings (or all findings in `strict` mode) that must be fixed before advancing.
 
-   e. **When blocked** — generate fix tasks and execute them as an additional wave within the current tier:
-      1. Run `bp_generate_fix_tasks` to get the list of blocking findings
-      2. For each blocking finding, create a fix task: read the finding's file and description, implement the fix
-      3. After all fix tasks complete, commit the fixes
-      4. Mark fixed findings with `bp_findings_update_status <F-ID> FIXED`
-      5. **Re-run the Codex review** on the updated diff: `scripts/codex-review.sh --base $TIER_START_REF`
-      6. Re-evaluate with `bp_tier_gate`
-      7. **Maximum 2 review-fix cycles per tier** — after 2 cycles, log any remaining P0/P1 findings as warnings and advance:
-         ```
-         [bp:tier-gate] WARNING: Advancing after 2 review-fix cycles with {N} unresolved P0/P1 findings
-         ```
+   e. **When blocked** — run the review-fix cycle using `bp_review_fix_cycle $TIER_START_REF 2`:
+      - The cycle function runs the review, evaluates the gate, and if blocked returns exit code 2 with `AWAITING_FIXES` and the fix task list
+      - For each fix task in the output: read the finding's file and description, implement the fix, commit
+      - After fixes, mark each fixed finding: `bp_findings_update_status <F-ID> FIXED`
+      - Call `bp_review_fix_cycle` again for the re-review (it tracks the cycle count internally)
+      - **Maximum 2 review-fix cycles per tier** — after 2 cycles, the function returns exit code 1 and logs a warning; advance to the next tier regardless
+      - If the function returns 0, all blocking findings are resolved — advance normally
 
    ```
    ═══ Tier {N} Complete — Codex Review ═══

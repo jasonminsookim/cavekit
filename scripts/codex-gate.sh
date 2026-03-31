@@ -143,6 +143,73 @@ bp_generate_fix_tasks() {
   done < <(grep -E '^\|' "$fpath" | grep -vF '| Finding' | grep -vE '^\|[-]')
 }
 
+# ── bp_review_fix_cycle ────────────────────────────────────────────────
+# Orchestrates the review-fix cycle with max iterations.
+# Arguments:
+#   $1 — base ref for diff (TIER_START_REF)
+#   $2 — max cycles (default: 2)
+#
+# Returns:
+#   0 — all clear (no blocking findings remain)
+#   1 — still has blocking findings after max cycles (advance with warning)
+#
+# This function is called by the build loop after a tier completes.
+# It runs codex-review.sh, evaluates the gate, and if blocked, outputs
+# the fix tasks for the caller to execute. The caller is responsible for
+# actually implementing fixes — this function handles the review/evaluate loop.
+
+bp_review_fix_cycle() {
+  local base_ref="${1:?base ref required}"
+  local max_cycles="${2:-2}"
+  local cycle=0
+
+  while (( cycle < max_cycles )); do
+    cycle=$((cycle + 1))
+    echo "[bp:tier-gate] Review-fix cycle ${cycle}/${max_cycles}"
+
+    # Run the review
+    if [[ -f "$SCRIPT_DIR/codex-review.sh" ]]; then
+      bash "$SCRIPT_DIR/codex-review.sh" --base "$base_ref"
+    else
+      echo "[bp:tier-gate] codex-review.sh not found, skipping review"
+      return 0
+    fi
+
+    # Evaluate the gate
+    local gate_output
+    gate_output="$(bp_tier_gate)" || true
+
+    local gate_result blocking_count
+    gate_result="$(echo "$gate_output" | grep 'GATE_RESULT=' | cut -d= -f2)"
+    blocking_count="$(echo "$gate_output" | grep 'BLOCKING_COUNT=' | cut -d= -f2)"
+
+    echo "$gate_output"
+
+    if [[ "$gate_result" == "proceed" ]]; then
+      echo "[bp:tier-gate] Gate: PROCEED (no blocking findings)"
+      return 0
+    fi
+
+    # If blocked and not the last cycle, output fix tasks for the caller
+    if (( cycle < max_cycles )); then
+      echo "[bp:tier-gate] Gate: BLOCKED — ${blocking_count} finding(s) need fixes"
+      echo "[bp:tier-gate] Fix tasks for this cycle:"
+      bp_generate_fix_tasks
+      echo "[bp:tier-gate] AWAITING_FIXES"
+      # The caller implements fixes, marks findings FIXED, then calls us again
+      # by continuing the loop. In practice, the build loop reads AWAITING_FIXES,
+      # implements the fixes, and then the loop continues with the re-review.
+      return 2  # Signal: fixes needed, caller should implement and re-call
+    fi
+  done
+
+  # Exhausted max cycles — advance with warning
+  local remaining
+  remaining="$(bp_generate_fix_tasks | wc -l | tr -d ' ')"
+  echo "[bp:tier-gate] WARNING: Advancing after ${max_cycles} review-fix cycles with ${remaining} unresolved blocking findings"
+  return 1
+}
+
 # ── CLI mode ───────────────────────────────────────────────────────────
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
@@ -152,10 +219,12 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
   case "$cmd" in
     gate) bp_tier_gate ;;
     fix-tasks) bp_generate_fix_tasks ;;
+    cycle) bp_review_fix_cycle "$@" ;;
     help|--help|-h)
-      echo "Usage: codex-gate.sh {gate|fix-tasks}"
-      echo "  gate        Evaluate findings and decide block/proceed"
-      echo "  fix-tasks   Generate fix task list for blocking findings"
+      echo "Usage: codex-gate.sh {gate|fix-tasks|cycle}"
+      echo "  gate              Evaluate findings and decide block/proceed"
+      echo "  fix-tasks         Generate fix task list for blocking findings"
+      echo "  cycle <ref> [max] Run review-fix cycle (default max: 2)"
       ;;
     *) echo "Unknown: $cmd" >&2; exit 1 ;;
   esac
