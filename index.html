@@ -1100,6 +1100,314 @@
       to { top: 110%; }
     }
 
+    /* ===== SECTION: ADVERSARIAL REVIEW ===== */
+    .review-headline {
+      font-size: clamp(1.3rem, 3vw, 1.8rem);
+      color: var(--text-primary);
+      margin-bottom: 8px;
+    }
+    .review-subheadline {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-bottom: 32px;
+      max-width: 600px;
+    }
+
+    .review-card {
+      background: rgba(0,0,0,0.35);
+      border: 1px solid var(--blueprint-decoration);
+      border-radius: 6px;
+      padding: 24px;
+      margin-bottom: 16px;
+      position: relative;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      opacity: 0;
+      transform: translateY(16px);
+      transition: opacity 0.6s cubic-bezier(0.23,1,0.32,1), transform 0.6s cubic-bezier(0.23,1,0.32,1);
+    }
+    .visible .review-card { opacity: 1; transform: translateY(0); }
+    .visible .review-card:nth-child(2) { transition-delay: 0.1s; }
+    .visible .review-card:nth-child(3) { transition-delay: 0.2s; }
+
+    .review-badge {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 9px;
+      letter-spacing: 1.5px;
+      padding: 3px 8px;
+      border-radius: 3px;
+      margin-bottom: 12px;
+    }
+    .review-badge.pre-build {
+      color: var(--blueprint);
+      border: 1px solid rgba(74,158,255,0.3);
+      background: rgba(74,158,255,0.08);
+    }
+    .review-badge.build-time {
+      color: #ffb347;
+      border: 1px solid rgba(255,179,71,0.3);
+      background: rgba(255,179,71,0.08);
+    }
+    .review-badge.runtime {
+      color: var(--green-pass);
+      border: 1px solid rgba(0,255,136,0.3);
+      background: rgba(0,255,136,0.08);
+    }
+
+    .review-card-title {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+    }
+
+    .review-diagram {
+      width: 100%;
+      overflow-x: auto;
+    }
+    .review-diagram svg {
+      width: 100%;
+      min-width: 400px;
+      display: block;
+    }
+    .review-diagram .rd-box {
+      fill: var(--blueprint-fill);
+      stroke: var(--blueprint);
+      stroke-width: 1;
+      rx: 3;
+    }
+    .review-diagram .rd-box-orange {
+      fill: rgba(255,179,71,0.06);
+      stroke: rgba(255,179,71,0.5);
+      stroke-width: 1;
+      rx: 3;
+    }
+    .review-diagram .rd-box-green {
+      fill: rgba(0,255,136,0.06);
+      stroke: rgba(0,255,136,0.5);
+      stroke-width: 1;
+      rx: 3;
+    }
+    .review-diagram .rd-text {
+      font-family: var(--font-mono);
+      font-size: 8px;
+      fill: var(--blueprint);
+      text-anchor: middle;
+      dominant-baseline: central;
+      letter-spacing: 0.5px;
+    }
+    .review-diagram .rd-text-orange {
+      font-family: var(--font-mono);
+      font-size: 8px;
+      fill: #ffb347;
+      text-anchor: middle;
+      dominant-baseline: central;
+    }
+    .review-diagram .rd-text-green {
+      font-family: var(--font-mono);
+      font-size: 8px;
+      fill: var(--green-pass);
+      text-anchor: middle;
+      dominant-baseline: central;
+    }
+    .review-diagram .rd-arrow {
+      stroke: var(--blueprint-decoration);
+      stroke-width: 1;
+      fill: none;
+      marker-end: url(#rd-arrowhead);
+    }
+    .review-diagram .rd-draw {
+      stroke-dashoffset: var(--d-len);
+      stroke-dasharray: var(--d-len);
+      opacity: 0;
+    }
+    .visible .review-card .rd-draw {
+      animation: drawLine 0.8s ease-out forwards;
+      animation-delay: var(--d-delay, 0.4s);
+      opacity: 1;
+    }
+    .review-diagram .rd-fade {
+      opacity: 0;
+    }
+    .visible .review-card .rd-fade {
+      animation: fadeIn 0.4s ease-out forwards;
+      animation-delay: var(--d-delay, 0.4s);
+    }
+
+    /* Severity table */
+    .severity-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+    .severity-table th {
+      text-align: left;
+      padding: 6px 10px;
+      color: var(--blueprint-dim);
+      font-size: 9px;
+      letter-spacing: 1.5px;
+      border-bottom: 1px solid var(--blueprint-decoration);
+      font-weight: 400;
+    }
+    .severity-table td {
+      padding: 8px 10px;
+      border-bottom: 1px solid rgba(74,158,255,0.06);
+      color: var(--text-secondary);
+    }
+    .severity-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+    .severity-dot.p0 { background: var(--red-diagnostic); box-shadow: 0 0 6px rgba(255,100,100,0.5); }
+    .severity-dot.p1 { background: #ff8c42; box-shadow: 0 0 4px rgba(255,140,66,0.4); }
+    .severity-dot.p2 { background: #ffb347; box-shadow: 0 0 4px rgba(255,179,71,0.3); }
+    .severity-dot.p3 { background: var(--blueprint-dim); }
+    .severity-action { font-size: 11px; }
+
+    .review-note {
+      margin-top: 24px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      text-align: center;
+      font-style: italic;
+      opacity: 0;
+      transition: opacity 0.5s ease-out;
+    }
+    .visible .review-note { opacity: 1; transition-delay: 0.5s; }
+
+    /* ===== SECTION: PARALLEL EXECUTION ===== */
+    .wave-headline {
+      font-size: clamp(1.3rem, 3vw, 1.8rem);
+      color: var(--text-primary);
+      margin-bottom: 32px;
+    }
+
+    .wave-viz {
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    .wave-label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 2px;
+      color: var(--blueprint-dim);
+      margin-bottom: 12px;
+    }
+
+    .wave-row {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .wave-task {
+      flex: 1;
+      background: rgba(0,0,0,0.35);
+      border: 1px solid var(--blueprint-decoration);
+      border-radius: 4px;
+      padding: 14px 12px;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      opacity: 0;
+      transform: translateY(12px);
+      transition: opacity 0.5s cubic-bezier(0.23,1,0.32,1), transform 0.5s cubic-bezier(0.23,1,0.32,1);
+    }
+    .visible .wave-task { opacity: 1; transform: translateY(0); }
+
+    .wave-task-id {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      color: var(--blueprint-dim);
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+    .wave-task-name {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+    .wave-task-agent {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      color: var(--blueprint-decoration);
+      margin-top: 6px;
+      letter-spacing: 0.5px;
+    }
+
+    .wave-arrows {
+      display: flex;
+      justify-content: center;
+      gap: 60px;
+      padding: 8px 0;
+      opacity: 0;
+      transition: opacity 0.5s ease-out;
+    }
+    .visible .wave-arrows { opacity: 1; }
+    .wave-arrows svg {
+      width: 24px;
+      height: 24px;
+    }
+    .wave-arrows .wa-line {
+      stroke: var(--blueprint-decoration);
+      stroke-width: 1.2;
+      stroke-dasharray: 4,3;
+    }
+    .wave-arrows .wa-head {
+      fill: var(--blueprint-decoration);
+    }
+    .wave-arrows .wa-draw {
+      stroke-dashoffset: 20;
+      stroke-dasharray: 20;
+    }
+    .visible .wave-arrows .wa-draw {
+      animation: drawLine 0.4s ease-out forwards;
+      animation-delay: var(--wa-delay, 0.6s);
+    }
+
+    .wave-complete {
+      text-align: center;
+      margin-top: 20px;
+      opacity: 0;
+      transition: opacity 0.6s ease-out;
+    }
+    .visible .wave-complete { opacity: 1; }
+    .wave-complete-badge {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 2px;
+      color: var(--green-pass);
+      border: 1px solid rgba(0,255,136,0.3);
+      background: rgba(0,255,136,0.06);
+      padding: 6px 16px;
+      border-radius: 4px;
+      box-shadow: 0 0 12px rgba(0,255,136,0.15);
+    }
+
+    .wave-note {
+      margin-top: 24px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      text-align: center;
+      max-width: 560px;
+      margin-left: auto;
+      margin-right: auto;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+    }
+    .visible .wave-note { opacity: 1; transform: translateY(0); }
+
     /* ===== RESPONSIVE: MOBILE ===== */
     @media (max-width: 768px) {
       .section { padding: 60px 16px; }
@@ -1112,6 +1420,12 @@
       .dabi-arrow-down { display: flex; }
 
       .terminal-block { font-size: 11px; padding: 16px 20px; }
+
+      .wave-row { flex-direction: column; }
+      .wave-arrows { gap: 20px; }
+
+      .review-card { padding: 16px; }
+      .severity-table { font-size: 11px; }
     }
 
     /* ===== REDUCED MOTION ===== */
@@ -1128,14 +1442,16 @@
       .construction-line, .crosshair, .rev-text, .rev-value, .dim-annotation, .dim-tick,
       .bg-dim, .bg-crosshair, .bg-schematic, .bg-scanline, .bg-node,
       .diag-panel, .dabi-card, .dabi-arrow, .dabi-text,
+      .review-card, .review-note,
+      .wave-task, .wave-arrows, .wave-complete, .wave-note,
       .loop-explain, .started-note, .started-buttons,
       .animate-fade {
         opacity: 1 !important;
         transform: none !important;
       }
       .problem-bar-fill { width: var(--bar-target) !important; }
-      .draw-path, .draw-box, .draw-line, .draw-ellipse, .title-letter, .title-frame, .title-frame-inner, .sig-draw { stroke-dashoffset: 0 !important; }
-      .draw-label, .loop-svg .node-group, .title-letter-fill, .rev-text, .rev-value, .dim-annotation, .dim-tick, .crosshair, .construction-line, .check-x, .diag-warning-dot { opacity: 1 !important; }
+      .draw-path, .draw-box, .draw-line, .draw-ellipse, .title-letter, .title-frame, .title-frame-inner, .sig-draw, .rd-draw, .wa-draw { stroke-dashoffset: 0 !important; }
+      .draw-label, .loop-svg .node-group, .title-letter-fill, .rev-text, .rev-value, .dim-annotation, .dim-tick, .crosshair, .construction-line, .check-x, .diag-warning-dot, .rd-fade { opacity: 1 !important; }
       .diag-bar-fill { width: var(--bar-target) !important; }
     }
   </style>
@@ -1589,7 +1905,7 @@
 
   <!-- ===== SECTION 3: HOW IT WORKS ===== -->
   <section class="section" id="how-it-works" aria-labelledby="dabi-heading">
-    <div class="section-label" aria-hidden="true">Section 03 &mdash; How It Works</div>
+    <div class="section-label" aria-hidden="true">Section 03 &mdash; How it Works</div>
     <h2 id="dabi-heading" class="sr-only">How Blueprint Works: The DABI Phases</h2>
 
     <div class="dabi-row">
@@ -1637,9 +1953,84 @@
     </p>
   </section>
 
-  <!-- ===== SECTION 4: THE RALPH LOOP — MONITOR PANEL ===== -->
+  <!-- ===== SECTION 4: ADVERSARIAL REVIEW ===== -->
+  <section class="section" id="adversarial-review" aria-labelledby="review-heading">
+    <div class="section-label" aria-hidden="true">Section 04 &mdash; Adversarial Review</div>
+    <h2 id="review-heading" class="review-headline">Two models. Different blind spots. Higher confidence.</h2>
+    <p class="review-subheadline">Claude builds. Codex challenges. A second model with different training biases catches what the first one missed.</p>
+
+    <div class="review-cards">
+      <!-- Card 1: Design Challenge -->
+      <div class="review-card">
+        <span class="review-badge pre-build">PRE-BUILD</span>
+        <div class="review-card-title">DESIGN CHALLENGE</div>
+        <div class="review-diagram">
+          <svg viewBox="0 0 520 60" role="img" aria-label="Design challenge flow: Claude drafts, Reviewer approves, Codex challenges, User reviews">
+            <defs>
+              <marker id="rd-arrowhead" markerWidth="6" markerHeight="4" refX="6" refY="2" orient="auto">
+                <polygon points="0,0 6,2 0,4" fill="var(--blueprint-decoration)"/>
+              </marker>
+            </defs>
+            <rect x="2" y="15" width="100" height="30" class="rd-box rd-draw" style="--d-len:260;--d-delay:0.4s"/>
+            <text x="52" y="30" class="rd-text rd-fade" style="--d-delay:0.6s">Claude drafts</text>
+            <line x1="104" y1="30" x2="128" y2="30" class="rd-arrow rd-draw" style="--d-len:24;--d-delay:0.7s"/>
+            <rect x="130" y="15" width="110" height="30" class="rd-box rd-draw" style="--d-len:280;--d-delay:0.8s"/>
+            <text x="185" y="30" class="rd-text rd-fade" style="--d-delay:1.0s">Reviewer approves</text>
+            <line x1="242" y1="30" x2="266" y2="30" class="rd-arrow rd-draw" style="--d-len:24;--d-delay:1.1s"/>
+            <rect x="268" y="15" width="120" height="30" class="rd-box-orange rd-draw" style="--d-len:300;--d-delay:1.2s"/>
+            <text x="328" y="30" class="rd-text-orange rd-fade" style="--d-delay:1.4s">Codex challenges</text>
+            <line x1="390" y1="30" x2="414" y2="30" class="rd-arrow rd-draw" style="--d-len:24;--d-delay:1.5s"/>
+            <rect x="416" y="15" width="100" height="30" class="rd-box-green rd-draw" style="--d-len:260;--d-delay:1.6s"/>
+            <text x="466" y="30" class="rd-text-green rd-fade" style="--d-delay:1.8s">User reviews</text>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Card 2: Tier Gate -->
+      <div class="review-card">
+        <span class="review-badge build-time">BUILD-TIME</span>
+        <div class="review-card-title">TIER GATE</div>
+        <table class="severity-table">
+          <thead>
+            <tr><th>LEVEL</th><th>DESCRIPTION</th><th>ACTION</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><span class="severity-dot p0"></span>P0</td><td>Security / data loss</td><td class="severity-action">Block merge</td></tr>
+            <tr><td><span class="severity-dot p1"></span>P1</td><td>Spec violation</td><td class="severity-action">Block tier advance</td></tr>
+            <tr><td><span class="severity-dot p2"></span>P2</td><td>Quality concern</td><td class="severity-action">Flag for review</td></tr>
+            <tr><td><span class="severity-dot p3"></span>P3</td><td>Suggestion</td><td class="severity-action">Note only</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Card 3: Command Safety -->
+      <div class="review-card">
+        <span class="review-badge runtime">RUNTIME</span>
+        <div class="review-card-title">COMMAND SAFETY</div>
+        <div class="review-diagram">
+          <svg viewBox="0 0 520 60" role="img" aria-label="Command safety flow: command enters, fast-path check, Codex classifies risk, verdict returned">
+            <rect x="2" y="15" width="90" height="30" class="rd-box rd-draw" style="--d-len:240;--d-delay:0.4s"/>
+            <text x="47" y="30" class="rd-text rd-fade" style="--d-delay:0.6s">Command</text>
+            <line x1="94" y1="30" x2="118" y2="30" class="rd-arrow rd-draw" style="--d-len:24;--d-delay:0.7s"/>
+            <rect x="120" y="15" width="100" height="30" class="rd-box rd-draw" style="--d-len:260;--d-delay:0.8s"/>
+            <text x="170" y="30" class="rd-text rd-fade" style="--d-delay:1.0s">Fast-path</text>
+            <line x1="222" y1="30" x2="256" y2="30" class="rd-arrow rd-draw" style="--d-len:34;--d-delay:1.1s"/>
+            <rect x="258" y="15" width="130" height="30" class="rd-box-orange rd-draw" style="--d-len:320;--d-delay:1.2s"/>
+            <text x="323" y="30" class="rd-text-orange rd-fade" style="--d-delay:1.4s">Codex classifies</text>
+            <line x1="390" y1="30" x2="414" y2="30" class="rd-arrow rd-draw" style="--d-len:24;--d-delay:1.5s"/>
+            <rect x="416" y="15" width="100" height="30" class="rd-box-green rd-draw" style="--d-len:260;--d-delay:1.6s"/>
+            <text x="466" y="30" class="rd-text-green rd-fade" style="--d-delay:1.8s">Verdict</text>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <p class="review-note">All Codex features are additive. Blueprint works fully without Codex installed.</p>
+  </section>
+
+  <!-- ===== SECTION 5: THE RALPH LOOP — MONITOR PANEL ===== -->
   <section class="section" id="ralph-loop" aria-labelledby="loop-heading">
-    <div class="section-label" aria-hidden="true">Section 04 &mdash; The Ralph Loop</div>
+    <div class="section-label" aria-hidden="true">Section 05 &mdash; The Ralph Loop</div>
     <h2 id="loop-heading" class="sr-only">The Ralph Loop: Iterative Build Cycle</h2>
 
     <div class="loop-panel">
@@ -1741,9 +2132,62 @@
     </p>
   </section>
 
-  <!-- ===== SECTION 5: GET STARTED ===== -->
+  <!-- ===== SECTION 6: PARALLEL EXECUTION ===== -->
+  <section class="section" id="parallel-execution" aria-labelledby="wave-heading">
+    <div class="section-label" aria-hidden="true">Section 06 &mdash; Parallel Execution</div>
+    <h2 id="wave-heading" class="wave-headline">Independent tasks run simultaneously. Wave by wave.</h2>
+
+    <div class="wave-viz">
+      <div class="wave-label">WAVE 1</div>
+      <div class="wave-row" id="wave1-row">
+        <div class="wave-task" style="transition-delay:0.08s">
+          <div class="wave-task-id">T-001</div>
+          <div class="wave-task-name">Schema</div>
+          <div class="wave-task-agent">agent-a &middot; worktree</div>
+        </div>
+        <div class="wave-task" style="transition-delay:0.16s">
+          <div class="wave-task-id">T-002</div>
+          <div class="wave-task-name">Auth</div>
+          <div class="wave-task-agent">agent-b &middot; worktree</div>
+        </div>
+        <div class="wave-task" style="transition-delay:0.24s">
+          <div class="wave-task-id">T-003</div>
+          <div class="wave-task-name">Config</div>
+          <div class="wave-task-agent">agent-c &middot; worktree</div>
+        </div>
+      </div>
+
+      <div class="wave-arrows" id="wave-arrows" style="transition-delay:0.7s">
+        <svg viewBox="0 0 24 24"><line x1="12" y1="2" x2="12" y2="18" class="wa-line wa-draw" style="--wa-delay:0.7s"/><polygon points="8,16 12,22 16,16" class="wa-head"/></svg>
+        <svg viewBox="0 0 24 24"><line x1="12" y1="2" x2="12" y2="18" class="wa-line wa-draw" style="--wa-delay:0.8s"/><polygon points="8,16 12,22 16,16" class="wa-head"/></svg>
+        <svg viewBox="0 0 24 24"><line x1="12" y1="2" x2="12" y2="18" class="wa-line wa-draw" style="--wa-delay:0.9s"/><polygon points="8,16 12,22 16,16" class="wa-head"/></svg>
+      </div>
+
+      <div class="wave-label" style="opacity:0;transition:opacity 0.4s ease-out" id="wave2-label">WAVE 2</div>
+      <div class="wave-row" id="wave2-row">
+        <div class="wave-task" id="wave2-task-1" style="opacity:0;transform:translateY(12px)">
+          <div class="wave-task-id">T-004</div>
+          <div class="wave-task-name">Users</div>
+          <div class="wave-task-agent">agent-a &middot; worktree</div>
+        </div>
+        <div class="wave-task" id="wave2-task-2" style="opacity:0;transform:translateY(12px)">
+          <div class="wave-task-id">T-005</div>
+          <div class="wave-task-name">Health</div>
+          <div class="wave-task-agent">agent-b &middot; worktree</div>
+        </div>
+      </div>
+
+      <div class="wave-complete" id="wave-complete" style="opacity:0">
+        <span class="wave-complete-badge">BUILD COMPLETE</span>
+      </div>
+    </div>
+
+    <p class="wave-note">Circuit breakers isolate failures to individual agents. One broken task does not block the rest of the wave.</p>
+  </section>
+
+  <!-- ===== SECTION 7: GET STARTED ===== -->
   <section class="section" id="get-started" aria-labelledby="start-heading" style="border-bottom:none;">
-    <div class="section-label" aria-hidden="true">Section 05 &mdash; Get Started</div>
+    <div class="section-label" aria-hidden="true">Section 07 &mdash; Get Started</div>
     <h2 id="start-heading" class="sr-only">Get Started with Blueprint</h2>
 
     <div class="terminal-block">
@@ -1802,6 +2246,7 @@
 
               if (entry.target.id === 'get-started') startTypewriter();
               if (entry.target.id === 'ralph-loop') startCounter();
+              if (entry.target.id === 'parallel-execution') startWaveAnimation();
             }
           });
         }, { threshold: 0.15 });
@@ -1809,6 +2254,15 @@
         sections.forEach(function(s) { observer.observe(s); });
       } else {
         sections.forEach(function(s) { s.classList.add('visible'); });
+        // Show wave-2 elements immediately for reduced motion
+        var w2l = document.getElementById('wave2-label');
+        var w2t1 = document.getElementById('wave2-task-1');
+        var w2t2 = document.getElementById('wave2-task-2');
+        var wc = document.getElementById('wave-complete');
+        if (w2l) w2l.style.opacity = '1';
+        if (w2t1) { w2t1.style.opacity = '1'; w2t1.style.transform = 'none'; }
+        if (w2t2) { w2t2.style.opacity = '1'; w2t2.style.transform = 'none'; }
+        if (wc) wc.style.opacity = '1';
         var l1 = document.getElementById('term-line-1');
         var l2 = document.getElementById('term-line-2');
         var cursor = document.getElementById('term-cursor');
@@ -1886,6 +2340,36 @@
         }
 
         setTimeout(tick, 800);
+      }
+
+      // ===== Wave Animation (Parallel Execution) =====
+      var waveStarted = false;
+      function startWaveAnimation() {
+        if (waveStarted) return;
+        waveStarted = true;
+
+        // Wave 2 label, tasks, and complete badge animate with JS delays
+        var label2 = document.getElementById('wave2-label');
+        var task1 = document.getElementById('wave2-task-1');
+        var task2 = document.getElementById('wave2-task-2');
+        var complete = document.getElementById('wave-complete');
+
+        // After wave 1 staggers in (0.24s) + arrows draw (0.4s) + pause
+        setTimeout(function() {
+          if (label2) label2.style.opacity = '1';
+        }, 1100);
+
+        setTimeout(function() {
+          if (task1) { task1.style.transition = 'opacity 0.5s cubic-bezier(0.23,1,0.32,1), transform 0.5s cubic-bezier(0.23,1,0.32,1)'; task1.style.opacity = '1'; task1.style.transform = 'translateY(0)'; }
+        }, 1200);
+
+        setTimeout(function() {
+          if (task2) { task2.style.transition = 'opacity 0.5s cubic-bezier(0.23,1,0.32,1), transform 0.5s cubic-bezier(0.23,1,0.32,1)'; task2.style.opacity = '1'; task2.style.transform = 'translateY(0)'; }
+        }, 1280);
+
+        setTimeout(function() {
+          if (complete) { complete.style.transition = 'opacity 0.6s ease-out'; complete.style.opacity = '1'; }
+        }, 1800);
       }
 
       // ===== Copy to Clipboard =====
