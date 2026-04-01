@@ -985,6 +985,22 @@
     }
     .btn-secondary:hover { background: rgba(74,158,255,0.04); }
 
+    /* ===== SKIP LINK ===== */
+    .skip-link {
+      position: absolute;
+      top: -100px;
+      left: 16px;
+      background: var(--bg);
+      color: var(--blueprint);
+      padding: 8px 16px;
+      border: 1px solid var(--blueprint);
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      z-index: 1000;
+    }
+    .skip-link:focus { top: 16px; }
+
     /* ===== FOOTER ===== */
     footer {
       max-width: 900px;
@@ -1457,6 +1473,7 @@
   </style>
 </head>
 <body>
+  <a href="#main-content" class="skip-link">Skip to content</a>
 
   <!-- ===== BACKGROUND ANIMATIONS ===== -->
   <div class="bg-canvas" aria-hidden="true">
@@ -1526,7 +1543,7 @@
   </div>
 
   <!-- ===== SECTION 1: HERO ===== -->
-  <header class="hero" role="banner">
+  <header class="hero" role="banner" id="main-content">
     <div class="section-label" aria-hidden="true">Section 01 &mdash; Hero</div>
 
     <!-- Engineering title block -->
@@ -1700,7 +1717,7 @@
 
     <div class="hero-links">
       <a href="https://github.com/JuliusBrussee/blueprint">View on GitHub &rarr;</a>
-      <a href="https://github.com/JuliusBrussee/blueprint/blob/main/README.md">Documentation</a>
+      <a href="docs.html">Read the Docs &rarr;</a>
     </div>
   </header>
 
@@ -2213,7 +2230,7 @@
 
     <div class="started-buttons">
       <a href="https://github.com/JuliusBrussee/blueprint" class="btn btn-primary">View on GitHub &rarr;</a>
-      <a href="https://opensource.org/licenses/MIT" class="btn btn-secondary">MIT License</a>
+      <a href="docs.html" class="btn btn-secondary">Read the Docs &rarr;</a>
     </div>
   </section>
 
