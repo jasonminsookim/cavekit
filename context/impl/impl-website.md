@@ -22,8 +22,8 @@ Build site: context/plans/build-site.md
 | T-012 | DONE | Docs content: Overview (what Blueprint is, DABI summary with links) + Quick Start (Greenfield + Brownfield annotated examples). |
 | T-013 | DONE | Docs content: All 10 commands in command-card format with phase badges, usage examples, flags tables, related links. |
 | T-014 | DONE | Docs content: DABI Lifecycle walkthrough, Blueprints as Source of Truth, Scientific Method Applied mapping. |
-| T-015 | NOT STARTED | Docs content: Codex Integration (5 subsections). |
-| T-016 | NOT STARTED | Docs content: Skills Reference + Configuration. |
+| T-015 | DONE | Docs content: 5 Codex Integration subsections (Design Challenge, Tier Gate, Speculative Review, Command Safety Gate, Graceful Degradation). |
+| T-016 | DONE | Docs content: 13 skill cards + settings reference table + file structure tree. |
 | T-017 | NOT STARTED | Landing page polish: responsive, a11y, perf audit. |
 | T-018 | NOT STARTED | Docs page polish: responsive, a11y, perf audit. |
 | T-019 | NOT STARTED | Cross-page integration: nav links, deep links, consistency. |
