@@ -132,6 +132,21 @@ Registers the plugin with Claude Code, syncs into Codex marketplace, installs th
 
 **Optional:** [Codex](https://github.com/openai/codex) (`npm install -g @openai/codex`) — adds adversarial review. Cavekit works without it. Codex makes it significantly harder to ship flawed specs and broken code.
 
+### Staying up to date with upstream
+
+If you're using a fork, add the upstream remote once:
+
+```bash
+git -C ~/.cavekit/.cavekit remote add upstream https://github.com/JuliusBrussee/cavekit
+```
+
+Then pull upstream changes:
+
+```bash
+git -C ~/.cavekit/.cavekit fetch upstream
+git -C ~/.cavekit/.cavekit merge upstream/main
+```
+
 ---
 
 ## How It Works
