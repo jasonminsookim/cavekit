@@ -34,7 +34,7 @@ The visual companion server lives in `scripts/visual-companion/`. It's a zero-de
 
 ```bash
 # Start with project persistence (mockups saved to .cavekit/companion/)
-scripts/visual-companion/start-server.sh --project-dir $(pwd)
+"${CLAUDE_PLUGIN_ROOT}/scripts/visual-companion/start-server.sh" --project-dir $(pwd)
 
 # Returns JSON: {"type":"server-started","port":52341,"url":"http://localhost:52341","screen_dir":"/path/to/.cavekit/companion/12345-1706000000"}
 ```
@@ -50,7 +50,7 @@ Save `screen_dir` from the response. Tell the user to open the URL.
 
 **Stopping:**
 ```bash
-scripts/visual-companion/stop-server.sh $SCREEN_DIR
+"${CLAUDE_PLUGIN_ROOT}/scripts/visual-companion/stop-server.sh" $SCREEN_DIR
 ```
 
 Persistent directories (`.cavekit/companion/`) are kept for later reference. Only `/tmp` sessions get cleaned up.

@@ -2,7 +2,7 @@
 name: ck-make
 description: "Implement a build site or plan — automatically parallelizes independent tasks and progresses through tiers autonomously"
 argument-hint: "[FILE] [--filter PATTERN] [--peer-review] [--max-iterations N] [--completion-promise TEXT]"
-allowed-tools: ["Bash(${CLAUDE_PLUGIN_ROOT}/scripts/setup-build.sh:*)", "Bash(${CLAUDE_PLUGIN_ROOT}/scripts/bp-config.sh:*)", "Bash(git *)"]
+allowed-tools: ["Bash(${CLAUDE_PLUGIN_ROOT}/scripts/setup-build.sh:*)", "Bash(${CLAUDE_PLUGIN_ROOT}/scripts/bp-config.sh:*)", "Bash(${CLAUDE_PLUGIN_ROOT}/scripts/codex-review.sh:*)", "Bash(${CLAUDE_PLUGIN_ROOT}/scripts/codex-gate.sh:*)", "Bash(git *)"]
 ---
 
 > **Note:** `/bp:build`, `/ck:build`, `/bp:make` are deprecated aliases. Use `/ck:make` instead.
@@ -139,22 +139,22 @@ Once the setup script completes (outputs the ralph prompt), you run the executio
 
 6. **Tier boundary check** — after updating impl tracking, check whether all tasks in the current tier are now done. If the current tier still has undone tasks, skip this step. If the tier is complete, run the Codex tier gate review (the `TIER_START_REF` was captured in step 1 at the start of this tier):
 
-   a. Source `codex-config.sh` and check `tier_gate_mode` via `bp_config_get tier_gate_mode`. If the value is `"off"`, skip the review and log:
+   a. Source `${CLAUDE_PLUGIN_ROOT}/scripts/codex-config.sh` and check `tier_gate_mode` via `bp_config_get tier_gate_mode`. If the value is `"off"`, skip the review and log:
       ```
       [ck:tier-gate] Tier gate review disabled (tier_gate_mode=off). Skipping.
       ```
 
-   b. Source `codex-detect.sh` and check `codex_available`. If `false`, log a note and continue:
+   b. Source `${CLAUDE_PLUGIN_ROOT}/scripts/codex-detect.sh` and check `codex_available`. If `false`, log a note and continue:
       ```
       [ck:tier-gate] Codex unavailable — skipping tier boundary review. Continuing to next tier.
       ```
 
    c. Otherwise, run the review inline (wait for it to complete before advancing):
       ```
-      scripts/codex-review.sh --base $TIER_START_REF
+      "${CLAUDE_PLUGIN_ROOT}/scripts/codex-review.sh" --base "$TIER_START_REF"
       ```
 
-   d. **Severity-based gating** — after the review, source `scripts/codex-gate.sh` and run `bp_tier_gate`:
+   d. **Severity-based gating** — after the review, source `${CLAUDE_PLUGIN_ROOT}/scripts/codex-gate.sh` and run `bp_tier_gate`:
       - If `GATE_RESULT=proceed`: log the tier review summary and advance.
       - If `GATE_RESULT=blocked`: the tier has P0/P1 findings (or all findings in `strict` mode) that must be fixed before advancing.
 

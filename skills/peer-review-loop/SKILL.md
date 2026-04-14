@@ -114,7 +114,7 @@ appends them to `context/impl/impl-review-findings.md`.
 
 ```bash
 # What the build loop runs on review iterations:
-source scripts/codex-review.sh
+source "${CLAUDE_PLUGIN_ROOT}/scripts/codex-review.sh"
 bp_codex_review --base main
 ```
 
