@@ -3,7 +3,7 @@
 # Cavekit Installer
 #
 # Usage:
-#   git clone https://github.com/JuliusBrussee/cavekit.git ~/.cavekit && ~/.cavekit/install.sh
+#   git clone https://github.com/jasonminsookim/cavekit.git ~/.cavekit && ~/.cavekit/install.sh
 
 set -euo pipefail
 

@@ -122,7 +122,7 @@ Spec is the product. Code is the derivative.
 ## Install
 
 ```bash
-git clone https://github.com/JuliusBrussee/cavekit.git ~/.cavekit
+git clone https://github.com/jasonminsookim/cavekit.git ~/.cavekit
 cd ~/.cavekit && ./install.sh
 ```
 
