@@ -303,7 +303,7 @@ bp_gate_codex_classify() {
 Working directory: ${workdir}"
 
   local raw_output
-  if ! raw_output="$(timeout "$timeout_s" codex --approval-mode full-auto --model "$model" --quiet -p "$full_prompt" 2>&1)"; then
+  if ! raw_output="$(timeout "$timeout_s" codex exec --full-auto --color never --skip-git-repo-check --model "$model" "$full_prompt" 2>&1)"; then
     # T-109: Timeout or error — passthrough with warning
     echo "PASSTHROUGH|Codex call failed or timed out" >&2
     echo "PASSTHROUGH|Codex classification failed"

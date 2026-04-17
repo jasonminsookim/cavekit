@@ -58,7 +58,7 @@ your implementation.
 The peer review loop supports two invocation paths:
 
 1. **Codex CLI delegation (primary)** — Uses `scripts/codex-review.sh` which
-   calls `codex` directly in `--approval-mode full-auto` with a structured
+   calls `codex exec --full-auto` directly with a structured
    review prompt. Faster, no MCP server overhead, findings are parsed and
    appended to `context/impl/impl-review-findings.md` automatically.
 

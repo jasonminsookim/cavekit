@@ -86,7 +86,7 @@ bp_codex_review() {
   local model
   model="$(bp_config_get codex_model o4-mini)"
 
-  local codex_cmd=(codex --approval-mode full-auto --model "$model" --quiet -p "$REVIEW_PROMPT")
+  local codex_cmd=(codex exec --full-auto --color never --skip-git-repo-check --model "$model" "$REVIEW_PROMPT")
 
   if [[ "${BP_CODEX_DRY_RUN:-}" == "1" ]]; then
     echo "[ck:review] DRY RUN — would execute: ${codex_cmd[*]} <<< <diff>"

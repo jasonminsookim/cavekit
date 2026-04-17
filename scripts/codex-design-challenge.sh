@@ -239,7 +239,7 @@ bp_design_challenge() {
   local start_time
   start_time="$(date +%s)"
 
-  local codex_cmd=(codex --approval-mode full-auto --model "$model" --quiet -p "$full_prompt")
+  local codex_cmd=(codex exec --full-auto --color never --skip-git-repo-check --model "$model" "$full_prompt")
 
   if [[ "${BP_CODEX_DRY_RUN:-}" == "1" ]]; then
     echo "[ck:design-challenge] DRY RUN — would send $file_count kits to Codex"
